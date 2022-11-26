@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+export PLUGIN_SERVICE="edgedb"
+export PLUGIN_COMMAND_PREFIX="$PLUGIN_SERVICE"
+export PLUGIN_DATA_ROOT="$DOKKU_LIB_ROOT/services/edgedb"
+export PLUGIN_CONFIG_ROOT=${PLUGIN_CONFIG_ROOT:="$DOKKU_LIB_ROOT/config/$PLUGIN_COMMAND_PREFIX"}
+export PLUGIN_DATA_HOST_ROOT="$PLUGIN_DATA_ROOT"
+export PLUGIN_IMAGE="edgedb/edgedb:3.0-alpha.1"
+export PLUGIN_CLI_IMAGE="edgedb/edgedb-cli:latest"
+export PLUGIN_DATASTORE_PORTS=(5656)
+export PLUGIN_SCHEME="edgedb"
+export PLUGIN_VARIABLE="EDGEDB"
+export PLUGIN_SERVER_TLS=('EDGEDB_SERVER_TLS_CERT' 'EDGEDB_SERVER_TLS_KEY')
+export PLUGIN_SHOW_SECRET="edgedb-show-secrets.sh"
+export PLUGIN_CONFIG_DIRECTORY="/edgedb-config"
+export PLUGIN_DATASTORE_WAIT_PORT=${PLUGIN_DATASTORE_PORTS[0]}
+export PLUGIN_CONFIG_SUFFIX="config"
+
+export PLUGIN_BUSYBOX_IMAGE="busybox:1.34.1-uclibc"
+export PLUGIN_WAIT_IMAGE="dokku/wait:0.6.0"

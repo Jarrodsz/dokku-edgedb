@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+set -eo pipefail
+
+[[ $DOKKU_TRACE ]] && set -x
+
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/config"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/common-functions"
+
+plugin-install() {
+    pull_docker_images
+
+    mkdir -p "$PLUGIN_DATA_ROOT" || echo "Failed to create $PLUGIN_SERVICE data directory"
+    chown "${DOKKU_SYSTEM_USER}:${DOKKU_SYSTEM_GROUP}" "$PLUGIN_DATA_ROOT"
+
+    mkdir -p "$PLUGIN_CONFIG_ROOT" || echo "Failed to create $PLUGIN_SERVICE config directory"
+    chown "${DOKKU_SYSTEM_USER}:${DOKKU_SYSTEM_GROUP}" "$PLUGIN_CONFIG_ROOT"
+
+    rm -f "/etc/sudoers.d/dokku-${PLUGIN_COMMAND_PREFIX}*"
+    _SUDOERS_FILE="/etc/sudoers.d/dokku-${PLUGIN_COMMAND_PREFIX}"
+
+    touch "$_SUDOERS_FILE"
+    cat >"$_SUDOERS_FILE" <<EOL
+%dokku ALL=(ALL) NOPASSWD:/bin/rm -f /etc/cron.d/dokku-${PLUGIN_COMMAND_PREFIX}-*
+%dokku ALL=(ALL) NOPASSWD:/bin/chown root\:root /etc/cron.d/dokku-${PLUGIN_COMMAND_PREFIX}-*
+%dokku ALL=(ALL) NOPASSWD:/bin/chmod 644 /etc/cron.d/dokku-${PLUGIN_COMMAND_PREFIX}-*
+%dokku ALL=(ALL) NOPASSWD:/bin/mv ${PLUGIN_DATA_ROOT}/.TMP_CRON_FILE /etc/cron.d/dokku-${PLUGIN_COMMAND_PREFIX}-*
+%dokku ALL=(ALL) NOPASSWD:/bin/chown 8983 $PLUGIN_DATA_ROOT/*
+%dokku ALL=(ALL) NOPASSWD:/bin/chgrp 8983 $PLUGIN_DATA_ROOT/*
+EOL
+
+    chmod 0440 "$_SUDOERS_FILE"
+}
+
+plugin-install "$@"

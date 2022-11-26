@@ -1,0 +1,257 @@
+#!/usr/bin/env bash
+set -eo pipefail
+
+[[ "$DOKKU_TRACE" ]] && set -x
+
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/config"
+source "$PLUGIN_AVAILABLE_PATH/config/functions"
+
+is_valid_service_name() {
+    declare desc="validate a service name"
+    declare SERVICE="$1"
+    [[ -z "$SERVICE" ]] && return 1
+    if [[ "$SERVICE" =~ ^[A-Za-z0-9_-]+$ ]]; then
+        return 0
+    fi
+    return 1
+}
+
+write_database_name() {
+    declare desc="write a sanitized database name"
+    declare SERVICE="$1"
+    local SERVICE_ROOT="$PLUGIN_DATA_ROOT/$SERVICE"
+
+    # some datastores do not like special characters in database names
+    # so we need to normalize them out
+    echo "$SERVICE" | tr .- _ >"$SERVICE_ROOT/DATABASE_NAME"
+}
+
+get_service_name() {
+    declare desc="retrieve a docker service label"
+    declare SERVICE="$1"
+    echo "dokku.${PLUGIN_COMMAND_PREFIX}.$SERVICE"
+}
+
+service_password() {
+    declare desc="fetch the password for a service"
+    declare SERVICE="$1"
+    local SERVICE_ROOT="$PLUGIN_DATA_ROOT/$SERVICE"
+    local PASSWORD_FILE="$SERVICE_ROOT/PASSWORD"
+    if [[ -f "$PASSWORD_FILE" ]]; then
+        cat "$PASSWORD_FILE"
+    fi
+}
+
+get_database_name() {
+    declare desc="retrieve a sanitized database name"
+    declare SERVICE="$1"
+    local SERVICE_ROOT="$PLUGIN_DATA_ROOT/$SERVICE"
+    if [[ ! -f "$SERVICE_ROOT/DATABASE_NAME" ]]; then
+        echo "$SERVICE" >"$SERVICE_ROOT/DATABASE_NAME"
+    fi
+    cat "$SERVICE_ROOT/DATABASE_NAME"
+}
+
+service_dns_hostname() {
+    declare desc="retrieve the alias of a service"
+    declare SERVICE="$1"
+    local SERVICE_NAME="$(get_service_name "$SERVICE")"
+    echo "$SERVICE_NAME" | tr ._ -
+}
+
+service_url() {
+    local SERVICE="$1"
+    local SERVICE_DNS_HOSTNAME="$(service_dns_hostname "$SERVICE")"
+    local DATABASE_NAME="$(get_database_name "$SERVICE")"
+    local PASSWORD="$(service_password "$SERVICE")"
+    echo "$PLUGIN_SCHEME://edgedb:$PASSWORD@$SERVICE_DNS_HOSTNAME:${PLUGIN_DATASTORE_PORTS[0]}/$DATABASE_NAME"
+}
+
+service_exposed_ports() {
+    declare desc="list exposed ports for a service"
+    declare SERVICE="$1"
+    local SERVICE_ROOT="$PLUGIN_DATA_ROOT/$SERVICE"
+    local PORT_FILE="$SERVICE_ROOT/PORT"
+    [[ ! -f $PORT_FILE ]] && echo '-' && return 0
+    local PORTS=($(cat "$PORT_FILE"))
+    for ((i = 0; i < ${#PLUGIN_DATASTORE_PORTS[@]}; i++)); do
+        echo -n "${PLUGIN_DATASTORE_PORTS[i]}->${PORTS[i]} "
+    done
+}
+
+get_container_ip() {
+    declare desc="retrieve the ip address of a container"
+    declare CONTAINER_ID="$1"
+    docker inspect --format '{{ .NetworkSettings.IPAddress }}' "$CONTAINER_ID" 2>/dev/null
+}
+
+service_linked_apps() {
+    declare desc="list all apps linked to a service for info output"
+    declare SERVICE="$1"
+    local SERVICE_ROOT="$PLUGIN_DATA_ROOT/$SERVICE"
+    local LINKS_FILE="$SERVICE_ROOT/LINKS"
+    touch "$LINKS_FILE"
+    [[ -z $(<"$LINKS_FILE") ]] && echo '-' && return 0
+    tr '\n' ' ' <"$LINKS_FILE"
+}
+
+service_status() {
+    declare desc="display the status of a service"
+    declare SERVICE="$1"
+    local SERVICE_ROOT="$PLUGIN_DATA_ROOT/$SERVICE"
+    local ID="$(cat "$SERVICE_ROOT/ID")"
+    local CONTAINER_STATUS
+    CONTAINER_STATUS=$(docker inspect -f "{{.State.Status}}" "$ID" 2>/dev/null || true)
+    [[ -n "$CONTAINER_STATUS" ]] && echo "$CONTAINER_STATUS" && return 0
+    echo "missing" && return 0
+}
+
+service_version() {
+    declare desc="display the running version for an image"
+    declare SERVICE="$1"
+    local SERVICE_NAME="$(get_service_name "$SERVICE")"
+    docker inspect -f '{{.Config.Image}}' "$SERVICE_NAME" 2>/dev/null || true
+}
+
+service_info() {
+    declare desc="retrieve information about a given service"
+    declare SERVICE="$1" INFO_FLAG="$2"
+    local SERVICE_ROOT="$PLUGIN_DATA_ROOT/$SERVICE"
+    local SERVICE_URL=$(service_url "$SERVICE")
+    local PORT_FILE="$SERVICE_ROOT/PORT"
+    local SERVICE_CONTAINER_ID="$(cat "$SERVICE_ROOT/ID")"
+    local flag key valid_flags
+
+    local flag_map=(
+        "--config-dir: ${SERVICE_ROOT}/${PLUGIN_CONFIG_SUFFIX}"
+        "--config-options: $(cat "$SERVICE_ROOT/CONFIG_OPTIONS" 2>/dev/null || true)"
+        "--data-dir: ${SERVICE_ROOT}/data"
+        "--dsn: ${SERVICE_URL}"
+        "--exposed-ports: $(service_exposed_ports "$SERVICE")"
+        "--id: ${SERVICE_CONTAINER_ID}"
+        "--internal-ip: $(get_container_ip "${SERVICE_CONTAINER_ID}")"
+        "--links: $(service_linked_apps "$SERVICE")"
+        "--service-root: ${SERVICE_ROOT}"
+        "--status: $(service_status "$SERVICE")"
+        "--version: $(service_version "$SERVICE")"
+    )
+    if [[ -z "$INFO_FLAG" ]]; then
+        dokku_log_info2_quiet "$SERVICE $PLUGIN_COMMAND_PREFIX service information"
+        for flag in "${flag_map[@]}"; do
+            key="$(echo "${flag#--}" | cut -f1 -d' ' | tr - ' ')"
+            dokku_log_verbose "$(printf "%-20s %-25s" "${key^}" "${flag#*: }")"
+        done
+    else
+        local match=false
+        for flag in "${flag_map[@]}"; do
+            valid_flags="${valid_flags} $(echo "$flag" | cut -d':' -f1)"
+            if [[ "$flag" == "${INFO_FLAG}:"* ]]; then
+                echo "${flag#*: }" && match=true
+            fi
+        done
+        [[ "$match" == "true" ]] || dokku_log_fail "Invalid flag passed, valid flags:${valid_flags}"
+    fi
+}
+
+pull_docker_images() {
+    declare desc="pull the required docker images"
+    "$DOCKER_BIN" pull "$PLUGIN_IMAGE" || dokku_log_fail "$PLUGIN_SERVICE image $PLUGIN_IMAGE pull failed"
+    "$DOCKER_BIN" pull "$PLUGIN_CLI_IMAGE" || dokku_log_fail "$PLUGIN_SERVICE image $PLUGIN_CLI_IMAGE pull failed"
+    "$DOCKER_BIN" pull "$PLUGIN_BUSYBOX_IMAGE" || dokku_log_fail "$PLUGIN_SERVICE image $PLUGIN_BUSYBOX_IMAGE pull failed"
+    "$DOCKER_BIN" pull "$PLUGIN_WAIT_IMAGE" || dokku_log_fail "$PLUGIN_SERVICE image $PLUGIN_WAIT_IMAGE pull failed"
+}
+
+verify_service_name() {
+    declare desc="verify that a service exists"
+    declare SERVICE="$@"
+    if [[ -z "$SERVICE" ]]; then
+        dokku_log_fail "SERVICE must not be empty"
+    fi
+    if [[ ! -d "$PLUGIN_DATA_ROOT/$SERVICE" ]]; then
+        dokku_log_fail "$PLUGIN_SERVICE service $SERVICE does not exist"
+    fi
+    return 0
+}
+
+service_alternative_alias() {
+    declare desc="retrieve an alternative alias for a service"
+    declare EXISTING_CONFIG="$1"
+    local COLORS=(AQUA BLACK BLUE FUCHSIA GRAY GREEN LIME MAROON NAVY OLIVE PURPLE RED SILVER TEAL WHITE YELLOW)
+    local ALIAS
+
+    for COLOR in "${COLORS[@]}"; do
+        ALIAS="${PLUGIN_ALT_ALIAS}_${COLOR}"
+        local IN_USE=$(echo "$EXISTING_CONFIG" | grep "${ALIAS}_URL")
+        if [[ -z "$IN_USE" ]]; then
+            break
+        fi
+        unset ALIAS
+    done
+    echo "$ALIAS"
+}
+
+add_to_links_file() {
+    declare desc="add an app to the service link file"
+    declare SERVICE="$1" APP="$2"
+    local SERVICE_ROOT="$PLUGIN_DATA_ROOT/$SERVICE"
+    local LINKS_FILE="$SERVICE_ROOT/LINKS"
+    touch "$LINKS_FILE"
+    sed -i.bak "/^$APP\$/d" "$LINKS_FILE" && rm "$LINKS_FILE.bak"
+    echo "$APP" >>"$LINKS_FILE"
+    sort "$LINKS_FILE" -u -o "$LINKS_FILE"
+}
+
+remove_from_links_file() {
+    declare desc="remove an app from the service link file"
+    declare SERVICE="$1" APP="$2"
+    local SERVICE_ROOT="$PLUGIN_DATA_ROOT/$SERVICE"
+    local LINKS_FILE="$SERVICE_ROOT/LINKS"
+    if [[ ! -f "$LINKS_FILE" ]]; then
+        return
+    fi
+    sed -i.bak "/^$APP\$/d" "$LINKS_FILE" && rm "$LINKS_FILE.bak"
+    sort "$LINKS_FILE" -u -o "$LINKS_FILE"
+}
+
+update_plugin_scheme_for_app() {
+    declare desc="retrieve the updated plugin scheme"
+    declare APP="$1"
+    local DATABASE_SCHEME
+    DATABASE_SCHEME=$(config_get "$APP" "${PLUGIN_VARIABLE}_DATABASE_SCHEME" || true)
+    PLUGIN_SCHEME=${DATABASE_SCHEME:-$PLUGIN_SCHEME}
+}
+
+service_stop() {
+    declare desc="stop a running service"
+    declare SERVICE="$1"
+    local SERVICE_ROOT="$PLUGIN_DATA_ROOT/$SERVICE"
+    local SERVICE_NAME="$(get_service_name "$SERVICE")"
+    local ID=$(docker ps -aq --no-trunc --filter "name=^/$SERVICE_NAME$" --format '{{ .ID }}') || true
+    [[ -z $ID ]] && dokku_log_warn "Service is already stopped" && return 0
+
+    if [[ -n $ID ]]; then
+        dokku_log_info2_quiet "Stopping container"
+        docker stop "$SERVICE_NAME" >/dev/null
+        dokku_log_verbose_quiet "Container stopped"
+    else
+        dokku_log_verbose_quiet "No container exists for $SERVICE"
+    fi
+}
+
+service_container_rm() {
+    declare desc="stop a service and remove the running container"
+    declare SERVICE="$1"
+    local SERVICE_NAME="$(get_service_name "$SERVICE")"
+    local ID
+    service_stop "$SERVICE"
+    ID=$(docker ps -aq --no-trunc --filter "name=^/$SERVICE_NAME$" --format '{{ .ID }}') || true
+    # this may be 'true' in tests...
+    if [[ -z "$ID" ]] || [[ "$ID" == "true" ]]; then
+        return 0
+    fi
+    dokku_log_verbose_quiet "Removing container"
+    docker update --restart=no "$SERVICE_NAME" >/dev/null 2>&1
+    if ! docker rm "$SERVICE_NAME" >/dev/null 2>&1; then
+        dokku_log_fail "Unable to remove container for service $SERVICE"
+    fi
+}

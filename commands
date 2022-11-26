@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+set -eo pipefail
+[[ "$DOKKU_TRACE" ]] && set -x
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/config"
+
+case "$1" in
+help | edgedb:help)
+    help_content_func() {
+        cat <<help_content
+    $PLUGIN_SERVICE, Plugin for managing Edgedb services
+help_content
+    }
+
+    if [[ $1 = "$PLUGIN_SERVICE:help" ]]; then
+        echo -e "usage: dokku ${PLUGIN_SERVICE}[:COMMAND]"
+    else
+        help_content_func
+    fi
+    ;;
+
+*)
+    exit "$DOKKU_NOT_IMPLEMENTED_EXIT"
+    ;;
+
+esac

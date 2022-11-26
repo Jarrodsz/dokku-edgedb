@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+set -eo pipefail
+
+[[ "$DOKKU_TRACE" ]] && set -x
+
+source "$PLUGIN_CORE_AVAILABLE_PATH/common/functions"
+source "$(dirname "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)")/config"
+source "$(dirname "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)")/functions"
+source "$(dirname "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)")/common-functions"
+
+cmd-service-create() {
+    declare desc="create a $PLUGIN_SERVICE service"
+    declare cmd="$PLUGIN_SERVICE:create" argv=("$@")
+    [[ ${argv[0]} == "$cmd" ]] && shift 1
+
+    # TODO: Support custom flags to the service:
+    # https://github.dev/dokku/dokku-postgres/blob/d281d63afb930ae47db19b6e27dd27aa72a5d191/common-functions#L678
+    declare SERVICE="$1" # CREATE_FLAGS_LIST=("${@:2}")
+
+    is_valid_service_name "$SERVICE" || dokku_log_fail "Please specify a valid name for the service. Valid characters are: [A-Za-z0-9_]+"
+    [[ -z "$SERVICE" ]] && dokku_log_fail "Please specify a valid name for the service"
+    [[ ! -d "$PLUGIN_DATA_ROOT/$SERVICE" ]] || dokku_log_fail "$PLUGIN_SERVICE service $SERVICE already exists"
+    SERVICE_ROOT="$PLUGIN_DATA_ROOT/$SERVICE"
+    LINKS_FILE="$SERVICE_ROOT/LINKS"
+
+    pull_docker_images
+
+    plugn trigger service-action pre-create "$PLUGIN_COMMAND_PREFIX" "$SERVICE"
+    mkdir -p "$SERVICE_ROOT" || dokku_log_fail "Unable to create service directory"
+    mkdir -p "$SERVICE_ROOT/data" || dokku_log_fail "Unable to create service data directory"
+    mkdir -p "$SERVICE_ROOT/config" || dokku_log_fail "Unable to create service configuration directory"
+    touch "$LINKS_FILE"
+
+    PASSWORD=$(openssl rand -hex 16)
+
+    echo "$PASSWORD" >"$SERVICE_ROOT/PASSWORD"
+    chmod 640 "$SERVICE_ROOT/PASSWORD"
+
+    # service_commit_config "$SERVICE"
+    write_database_name "$SERVICE"
+    plugn trigger service-action post-create "$PLUGIN_COMMAND_PREFIX" "$SERVICE"
+    service_create_container "$SERVICE"
+    plugn trigger service-action post-create-complete "$PLUGIN_COMMAND_PREFIX" "$SERVICE"
+}
+
+cmd-service-create "$@"

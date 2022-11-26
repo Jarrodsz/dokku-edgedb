@@ -1,0 +1,103 @@
+#!/usr/bin/env bash
+
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/config"
+
+set -eo pipefail
+[[ $DOKKU_TRACE ]] && set -x
+
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/common-functions"
+source "$PLUGIN_CORE_AVAILABLE_PATH/common/functions"
+source "$PLUGIN_AVAILABLE_PATH/config/functions"
+
+service_create_container() {
+    local SERVICE="$1"
+    local SERVICE_ROOT="$PLUGIN_DATA_ROOT/$SERVICE"
+    local SERVICE_HOST_ROOT="$PLUGIN_DATA_HOST_ROOT/$SERVICE"
+    local SERVICE_NAME="$(get_service_name "$SERVICE")"
+    local PASSWORD="$(service_password "$SERVICE")"
+    local DATABASE_NAME="$(get_database_name "$SERVICE")"
+
+    dokku_log_verbose_quiet "Creating container database"
+    ID=$(
+        "$DOCKER_BIN" run --name "$SERVICE_NAME" \
+            --volume "$SERVICE_HOST_ROOT/data:/var/lib/edgedb/data" \
+            --env "EDGEDB_SERVER_SECURITY=insecure_dev_mode" \
+            --restart always \
+            --label dokku=service \
+            --label dokku.service="$PLUGIN_SERVICE" \
+            --detach \
+            "$PLUGIN_IMAGE"
+    )
+    echo "$ID" >"$SERVICE_ROOT/ID"
+
+    dokku_log_verbose_quiet "Waiting for container to be ready. This takes about 60 seconds."
+    "$DOCKER_BIN" run --rm --link "$SERVICE_NAME:$PLUGIN_COMMAND_PREFIX" "$PLUGIN_WAIT_IMAGE" -p "$PLUGIN_DATASTORE_WAIT_PORT" -t 60 >/dev/null
+
+    dokku_log_verbose_quiet "Securing connection to database"
+    "$DOCKER_BIN" run --rm --link "$SERVICE_NAME:$PLUGIN_COMMAND_PREFIX" \
+        --env "EDGEDB_SERVER_PASSWORD=$PASSWORD" \
+        --volume "$SERVICE_ROOT/config:/.config/edgedb" \
+        "$PLUGIN_CLI_IMAGE" \
+        -H "edgedb" instance link "$DATABASE_NAME" --port "5656" --user "edgedb" --database "edgedb" --trust-tls-cert
+
+    dokku_log_info2 "$PLUGIN_SERVICE container created: $SERVICE"
+    service_info "$SERVICE"
+}
+
+service_link() {
+    declare desc="link a service to an application"
+    declare SERVICE="$1" APP="$2"
+    update_plugin_scheme_for_app "$APP"
+    local SERVICE_URL=$(service_url "$SERVICE")
+    local SERVICE_NAME="$(get_service_name "$SERVICE")"
+    local SERVICE_ROOT="$PLUGIN_DATA_ROOT/$SERVICE"
+    local EXISTING_CONFIG=$(config_all "$APP")
+    local SERVICE_DNS_HOSTNAME=$(service_dns_hostname "$SERVICE")
+    local DATABASE_NAME="$(get_database_name "$SERVICE")"
+
+    plugn trigger service-action pre-link "$PLUGIN_COMMAND_PREFIX" "$SERVICE" "$APP"
+    add_to_links_file "$SERVICE" "$APP"
+
+    local CONFIG_PATH="$SERVICE_ROOT/config"
+
+    if declare -f -F add_passed_docker_option >/dev/null; then
+        # shellcheck disable=SC2034
+        local passed_phases=(build deploy run)
+        add_passed_docker_option passed_phases[@] "--link $SERVICE_NAME:$PLUGIN_COMMAND_PREFIX"
+        add_passed_docker_option passed_phases[@] "--volume $CONFIG_PATH:$PLUGIN_CONFIG_DIRECTORY"
+    else
+        dokku docker-options:add "$APP" build,deploy,run "--link $SERVICE_NAME:$PLUGIN_COMMAND_PREFIX"
+        dokku docker-options:add "$APP" build,deploy,run "--volume $CONFIG_PATH:$PLUGIN_CONFIG_DIRECTORY"
+    fi
+    [[ -n "$SERVICE_QUERYSTRING" ]] && SERVICE_URL="${SERVICE_URL}?${SERVICE_QUERYSTRING}"
+    plugn trigger service-action post-link "$PLUGIN_COMMAND_PREFIX" "$SERVICE" "$APP"
+    config_set "$APP" \
+        "EDGEDB_CREDENTIALS_FILE=$PLUGIN_CONFIG_DIRECTORY/credentials/$DATABASE_NAME.json"
+    plugn trigger service-action post-link-complete "$PLUGIN_COMMAND_PREFIX" "$SERVICE" "$APP"
+}
+
+service_unlink() {
+    declare desc="unlink an application from a service"
+    declare SERVICE="$1" APP="$2"
+    update_plugin_scheme_for_app "$APP"
+    local SERVICE_URL=$(service_url "$SERVICE")
+    local SERVICE_NAME="$(get_service_name "$SERVICE")"
+    local EXISTING_CONFIG=$(config_all "$APP")
+
+    plugn trigger service-action pre-unlink "$PLUGIN_COMMAND_PREFIX" "$SERVICE" "$APP"
+    remove_from_links_file "$SERVICE" "$APP"
+
+    if declare -f -F add_passed_docker_option >/dev/null; then
+        # shellcheck disable=SC2034
+        local passed_phases=(build deploy run)
+        remove_passed_docker_option passed_phases[@] "--link $SERVICE_NAME:$PLUGIN_COMMAND_PREFIX"
+        remove_passed_docker_option passed_phases[@] "--volume $CONFIG_PATH:$PLUGIN_CONFIG_DIRECTORY"
+    else
+        dokku docker-options:remove "$APP" build,deploy,run "--link $SERVICE_NAME:$PLUGIN_COMMAND_PREFIX"
+        dokku docker-options:remove "$APP" build,deploy,run "--volume $CONFIG_PATH:$PLUGIN_CONFIG_DIRECTORY"
+    fi
+
+    plugn trigger service-action post-unlink "$PLUGIN_COMMAND_PREFIX" "$SERVICE" "$APP"
+    config_unset "$APP" "EDGEDB_CREDENTIALS_FILE"
+    plugn trigger service-action post-unlink-complete "$PLUGIN_COMMAND_PREFIX" "$SERVICE" "$APP"
+}
