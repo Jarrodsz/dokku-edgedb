@@ -30,8 +30,8 @@ service_create_container() {
     )
     echo "$ID" >"$SERVICE_ROOT/ID"
 
-    dokku_log_verbose_quiet "Waiting for container to be ready. This takes about 60 seconds."
-    "$DOCKER_BIN" run --rm --link "$SERVICE_NAME:$PLUGIN_COMMAND_PREFIX" "$PLUGIN_WAIT_IMAGE" -p "$PLUGIN_DATASTORE_WAIT_PORT" -t 60 >/dev/null
+    dokku_log_verbose_quiet "Waiting for container to be ready. This takes about 2 minutes."
+    "$DOCKER_BIN" run --rm --link "$SERVICE_NAME:$PLUGIN_COMMAND_PREFIX" "$PLUGIN_WAIT_IMAGE" -p "$PLUGIN_DATASTORE_WAIT_PORT" -t 120 >/dev/null
 
     dokku_log_verbose_quiet "Securing connection to database"
     "$DOCKER_BIN" run --rm --link "$SERVICE_NAME:$PLUGIN_COMMAND_PREFIX" \
