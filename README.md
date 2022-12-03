@@ -2,6 +2,12 @@
 
 Plugin for [Edgedb][1] on dokku.
 
+## Installation
+
+```bash
+sudo dokku plugin:install https://github.com/IgnisDa/dokku-edgedb.git
+```
+
 ## How it works
 
 Since edgedb can be connected only by an authenticated client (TLS certificates MUST be
