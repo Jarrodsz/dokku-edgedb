@@ -98,6 +98,6 @@ service_unlink() {
     fi
 
     plugn trigger service-action post-unlink "$PLUGIN_COMMAND_PREFIX" "$SERVICE" "$APP"
-    config_unset "$APP" "EDGEDB_CREDENTIALS_FILE"
+    config_unset --no-restart "$APP" "EDGEDB_CREDENTIALS_FILE"
     plugn trigger service-action post-unlink-complete "$PLUGIN_COMMAND_PREFIX" "$SERVICE" "$APP"
 }
