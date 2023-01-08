@@ -23,6 +23,6 @@ Right now, the plugin supports only the `create`, `link`, `unlink` and `destroy`
 
 ## Additional notes
 
-- The edgedb server usually requires more than 2GB of RAM to run. If you do not have
-  enough RAM, you will have to create a swap file. Please refer to tutorials on how to
+- The edgedb server usually requires more than 2GB of RAM to _**start**_ (not run). If you do not have
+  enough RAM, you will have to create a swap file. Please refer to tutorials online on how to
   do this.
