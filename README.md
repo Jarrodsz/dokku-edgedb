@@ -20,3 +20,9 @@ use this to connect to the edgedb server.
 Right now, the plugin supports only the `create`, `link`, `unlink` and `destroy` commands.
 
 [1]: https://www.edgedb.com/
+
+## Additional notes
+
+- The edgedb server usually requires more than 2GB of RAM to run. If you do not have
+  enough RAM, you will have to create a swap file. Please refer to tutorials on how to
+  do this.

@@ -5,7 +5,7 @@ export PLUGIN_COMMAND_PREFIX="$PLUGIN_SERVICE"
 export PLUGIN_DATA_ROOT="$DOKKU_LIB_ROOT/services/edgedb"
 export PLUGIN_CONFIG_ROOT=${PLUGIN_CONFIG_ROOT:="$DOKKU_LIB_ROOT/config/$PLUGIN_COMMAND_PREFIX"}
 export PLUGIN_DATA_HOST_ROOT="$PLUGIN_DATA_ROOT"
-export PLUGIN_IMAGE="edgedb/edgedb:3.0-alpha.1"
+export PLUGIN_IMAGE="edgedb/edgedb:2.9"
 export PLUGIN_CLI_IMAGE="edgedb/edgedb-cli:latest"
 export PLUGIN_DATASTORE_PORTS=(5656)
 export PLUGIN_SCHEME="edgedb"
