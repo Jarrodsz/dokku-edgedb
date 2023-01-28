@@ -579,7 +579,6 @@ service_link() {
   local SERVICE_ROOT="$PLUGIN_DATA_ROOT/$SERVICE"
   local EXISTING_CONFIG=$(config_all "$APP")
   local LINK=$(echo "$EXISTING_CONFIG" | grep "$SERVICE_URL" | cut -d: -f1) || true
-  local SERVICE_DNS_HOSTNAME=$(service_dns_hostname "$SERVICE")
   local DATABASE_NAME="$(get_database_name "$SERVICE")"
   local LINKS_FILE="$SERVICE_ROOT/LINKS"
   local CONFIG_PATH="$SERVICE_ROOT/config"
@@ -910,8 +909,8 @@ service_unlink() {
   local SERVICE_URL=$(service_url "$SERVICE")
   local SERVICE_NAME="$(get_service_name "$SERVICE")"
   local EXISTING_CONFIG=$(config_all "$APP")
-  local SERVICE_DNS_HOSTNAME=$(service_dns_hostname "$SERVICE")
   local LINK=($(echo "$EXISTING_CONFIG" | grep "$SERVICE_URL" | cut -d: -f1)) || true
+  local CONFIG_PATH="$SERVICE_ROOT/config"
 
   plugn trigger service-action pre-unlink "$PLUGIN_COMMAND_PREFIX" "$SERVICE" "$APP"
   remove_from_links_file "$SERVICE" "$APP"
@@ -919,9 +918,11 @@ service_unlink() {
   if declare -f -F add_passed_docker_option >/dev/null; then
     # shellcheck disable=SC2034
     local passed_phases=(build deploy run)
-    remove_passed_docker_option passed_phases[@] "--link $SERVICE_NAME:$SERVICE_DNS_HOSTNAME"
+    remove_passed_docker_option passed_phases[@] "--link $SERVICE_NAME:$PLUGIN_COMMAND_PREFIX"
+    remove_passed_docker_option passed_phases[@] "--volume $CONFIG_PATH:$PLUGIN_CONFIG_DIRECTORY"
   else
-    dokku docker-options:remove "$APP" build,deploy,run "--link $SERVICE_NAME:$SERVICE_DNS_HOSTNAME"
+    dokku docker-options:remove "$APP" build,deploy,run "--link $SERVICE_NAME:$PLUGIN_COMMAND_PREFIX"
+    dokku docker-options:remove "$APP" build,deploy,run "--volume $CONFIG_PATH:$PLUGIN_CONFIG_DIRECTORY"
   fi
 
   [[ -z ${LINK[*]} ]] && dokku_log_fail "Not linked to app $APP"
