@@ -1,103 +1,182 @@
 #!/usr/bin/env bash
 
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/config"
-
 set -eo pipefail
 [[ $DOKKU_TRACE ]] && set -x
-
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/common-functions"
 source "$PLUGIN_CORE_AVAILABLE_PATH/common/functions"
 source "$PLUGIN_AVAILABLE_PATH/config/functions"
+if [[ -f "$PLUGIN_AVAILABLE_PATH/docker-options/functions" ]]; then
+  source "$PLUGIN_AVAILABLE_PATH/docker-options/functions"
+fi
+
+service_connect() {
+  local SERVICE="$1"
+  local SERVICE_ROOT="$PLUGIN_DATA_ROOT/$SERVICE"
+  local SERVICE_NAME="$(get_service_name "$SERVICE")"
+  local DATABASE_NAME="$(get_database_name "$SERVICE")"
+  local SERVICE_TTY_OPTS
+  has_tty && SERVICE_TTY_OPTS="-t"
+
+  docker exec --env=LANG=C.UTF-8 --env=LC_ALL=C.UTF-8 -i $SERVICE_TTY_OPTS "$SERVICE_NAME" edgedb -h localhost -U edgedb "$DATABASE_NAME"
+}
+
+service_create() {
+  local SERVICE="$1"
+  is_valid_service_name "$SERVICE" || dokku_log_fail "Please specify a valid name for the service. Valid characters are: [A-Za-z0-9_]+"
+  [[ -z "$SERVICE" ]] && dokku_log_fail "Please specify a valid name for the service"
+  [[ ! -d "$PLUGIN_DATA_ROOT/$SERVICE" ]] || dokku_log_fail "$PLUGIN_SERVICE service $SERVICE already exists"
+  SERVICE_ROOT="$PLUGIN_DATA_ROOT/$SERVICE"
+  LINKS_FILE="$SERVICE_ROOT/LINKS"
+
+  service_parse_args "${@:2}"
+
+  if ! service_image_exists "$SERVICE"; then
+    if [[ "$PLUGIN_DISABLE_PULL" == "true" ]]; then
+      dokku_log_warn "${PLUGIN_DISABLE_PULL_VARIABLE} environment variable detected. Not running pull command." 1>&2
+      dokku_log_warn "   docker pull ${IMAGE}" 1>&2
+      dokku_log_warn "$PLUGIN_SERVICE service creation failed"
+      exit 1
+    fi
+    docker pull "$PLUGIN_IMAGE:$PLUGIN_IMAGE_VERSION" || dokku_log_fail "$PLUGIN_SERVICE image $PLUGIN_IMAGE:$PLUGIN_IMAGE_VERSION pull failed"
+  fi
+
+  plugn trigger service-action pre-create "$PLUGIN_COMMAND_PREFIX" "$SERVICE"
+  mkdir -p "$SERVICE_ROOT" || dokku_log_fail "Unable to create service directory"
+  mkdir -p "$SERVICE_ROOT/data" || dokku_log_fail "Unable to create service data directory"
+  touch "$LINKS_FILE"
+
+  PASSWORD=$(openssl rand -hex 16)
+  if [[ -n "$SERVICE_PASSWORD" ]]; then
+    PASSWORD="$SERVICE_PASSWORD"
+    dokku_log_warn "Specified password may not be as secure as the auto-generated password"
+  fi
+  echo "$PASSWORD" >"$SERVICE_ROOT/PASSWORD"
+  chmod 640 "$SERVICE_ROOT/PASSWORD"
+
+  service_commit_config "$SERVICE"
+  write_database_name "$SERVICE"
+  plugn trigger service-action post-create "$PLUGIN_COMMAND_PREFIX" "$SERVICE"
+  service_create_container "$SERVICE"
+  plugn trigger service-action post-create-complete "$PLUGIN_COMMAND_PREFIX" "$SERVICE"
+}
 
 service_create_container() {
-    local SERVICE="$1"
-    local SERVICE_ROOT="$PLUGIN_DATA_ROOT/$SERVICE"
-    local SERVICE_HOST_ROOT="$PLUGIN_DATA_HOST_ROOT/$SERVICE"
-    local SERVICE_NAME="$(get_service_name "$SERVICE")"
-    local PASSWORD="$(service_password "$SERVICE")"
-    local DATABASE_NAME="$(get_database_name "$SERVICE")"
+  local SERVICE="$1"
+  local SERVICE_ROOT="$PLUGIN_DATA_ROOT/$SERVICE"
+  local SERVICE_HOST_ROOT="$PLUGIN_DATA_HOST_ROOT/$SERVICE"
+  local SERVICE_NAME="$(get_service_name "$SERVICE")"
+  local PASSWORD="$(service_password "$SERVICE")"
+  local DATABASE_NAME="$(get_database_name "$SERVICE")"
+  local PREVIOUS_ID
 
-    dokku_log_verbose_quiet "Creating container database"
-    ID=$(
-        "$DOCKER_BIN" run --name "$SERVICE_NAME" \
-            --volume "$SERVICE_HOST_ROOT/data:/var/lib/edgedb/data" \
-            --env "EDGEDB_SERVER_SECURITY=insecure_dev_mode" \
-            --restart always \
-            --label dokku=service \
-            --label dokku.service="$PLUGIN_SERVICE" \
-            --detach \
-            "$PLUGIN_IMAGE"
-    )
-    echo "$ID" >"$SERVICE_ROOT/ID"
+  if [[ -f "$SERVICE_ROOT/CONFIG_OPTIONS" ]]; then
+    export CONFIG_OPTIONS="$(cat "$SERVICE_ROOT/CONFIG_OPTIONS")"
+  fi
 
-    dokku_log_verbose_quiet "Waiting for container to be ready. This takes about 2 minutes."
-    "$DOCKER_BIN" run --rm --link "$SERVICE_NAME:$PLUGIN_COMMAND_PREFIX" "$PLUGIN_WAIT_IMAGE" -p "$PLUGIN_DATASTORE_WAIT_PORT" -t 120 >/dev/null
+  [[ -f "$SERVICE_ROOT/SERVICE_MEMORY" ]] && SERVICE_MEMORY="$(cat "$SERVICE_ROOT/SERVICE_MEMORY")"
+  if [[ -n "$SERVICE_MEMORY" ]]; then
+    MEMORY_LIMIT="--memory=${SERVICE_MEMORY}m"
+  fi
 
-    dokku_log_verbose_quiet "Securing connection to database"
-    "$DOCKER_BIN" run --rm --link "$SERVICE_NAME:$PLUGIN_COMMAND_PREFIX" \
-        --env "EDGEDB_SERVER_PASSWORD=$PASSWORD" \
-        --volume "$SERVICE_ROOT/config:/.config/edgedb" \
-        "$PLUGIN_CLI_IMAGE" \
-        -H "edgedb" instance link "$DATABASE_NAME" --port "5656" --user "edgedb" --database "edgedb" --trust-tls-cert
+  [[ -f "$SERVICE_ROOT/SHM_SIZE" ]] && SERVICE_SHM_SIZE="$(cat "$SERVICE_ROOT/SHM_SIZE")"
+  if [[ -n "$SERVICE_SHM_SIZE" ]]; then
+    SHM_SIZE="--shm-size=${SERVICE_SHM_SIZE}"
+  fi
 
-    dokku_log_info2 "$PLUGIN_SERVICE container created: $SERVICE"
-    service_info "$SERVICE"
+  [[ -f "$SERVICE_ROOT/IMAGE" ]] && PLUGIN_IMAGE="$(cat "$SERVICE_ROOT/IMAGE")"
+  [[ -f "$SERVICE_ROOT/IMAGE_VERSION" ]] && PLUGIN_IMAGE_VERSION="$(cat "$SERVICE_ROOT/IMAGE_VERSION")"
+
+  # shellcheck disable=SC2086
+  ID=$(docker run --name "$SERVICE_NAME" $MEMORY_LIMIT $SHM_SIZE -v "$SERVICE_HOST_ROOT/data:/var/lib/edgedb/data" -e "EDGEDB_PASSWORD=$PASSWORD" --env-file="$SERVICE_ROOT/ENV" --env "EDGEDB_SERVER_SECURITY=insecure_dev_mode" -d --restart always --label dokku=service --label dokku.service=edgedb "$PLUGIN_IMAGE:$PLUGIN_IMAGE_VERSION" $CONFIG_OPTIONS)
+  echo "$ID" >"$SERVICE_ROOT/ID"
+
+  dokku_log_verbose_quiet "Waiting for container to be ready"
+  docker run --rm --link "$SERVICE_NAME:$PLUGIN_COMMAND_PREFIX" "$PLUGIN_WAIT_IMAGE" -p "$PLUGIN_DATASTORE_WAIT_PORT" >/dev/null
+
+  dokku_log_verbose_quiet "Creating container database"
+  docker exec "$SERVICE_NAME" su - edgedb -c "createdb -E utf8 $DATABASE_NAME" 2>/dev/null || dokku_log_verbose_quiet 'Already exists'
+
+  dokku_log_verbose_quiet "Securing connection to database"
+  service_pause "$SERVICE" >/dev/null
+  docker run --rm -i -v "$SERVICE_HOST_ROOT/data:/var/lib/edgedbql/data" "$PLUGIN_IMAGE:$PLUGIN_IMAGE_VERSION" bash -s <"$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/scripts/enable_ssl.sh" &>/dev/null
+
+  PREVIOUS_ID=$(docker ps -aq --no-trunc --filter "status=exited" --filter "name=^/$SERVICE_NAME$" --format '{{ .ID }}') || true
+  docker start "$PREVIOUS_ID" >/dev/null
+  service_port_unpause "$SERVICE"
+
+  dokku_log_info2 "$PLUGIN_SERVICE container created: $SERVICE"
+  service_info "$SERVICE"
 }
 
-service_link() {
-    declare desc="link a service to an application"
-    declare SERVICE="$1" APP="$2"
-    update_plugin_scheme_for_app "$APP"
-    local SERVICE_URL=$(service_url "$SERVICE")
-    local SERVICE_NAME="$(get_service_name "$SERVICE")"
-    local SERVICE_ROOT="$PLUGIN_DATA_ROOT/$SERVICE"
-    local EXISTING_CONFIG=$(config_all "$APP")
-    local SERVICE_DNS_HOSTNAME=$(service_dns_hostname "$SERVICE")
-    local DATABASE_NAME="$(get_database_name "$SERVICE")"
+service_export() {
+  local SERVICE="$1"
+  local SERVICE_ROOT="$PLUGIN_DATA_ROOT/$SERVICE"
+  local SERVICE_NAME="$(get_service_name "$SERVICE")"
+  local DATABASE_NAME="$(get_database_name "$SERVICE")"
+  local PASSWORD="$(service_password "$SERVICE")"
 
-    plugn trigger service-action pre-link "$PLUGIN_COMMAND_PREFIX" "$SERVICE" "$APP"
-    add_to_links_file "$SERVICE" "$APP"
-
-    local CONFIG_PATH="$SERVICE_ROOT/config"
-
-    if declare -f -F add_passed_docker_option >/dev/null; then
-        # shellcheck disable=SC2034
-        local passed_phases=(build deploy run)
-        add_passed_docker_option passed_phases[@] "--link $SERVICE_NAME:$PLUGIN_COMMAND_PREFIX"
-        add_passed_docker_option passed_phases[@] "--volume $CONFIG_PATH:$PLUGIN_CONFIG_DIRECTORY"
-    else
-        dokku docker-options:add "$APP" build,deploy,run "--link $SERVICE_NAME:$PLUGIN_COMMAND_PREFIX"
-        dokku docker-options:add "$APP" build,deploy,run "--volume $CONFIG_PATH:$PLUGIN_CONFIG_DIRECTORY"
-    fi
-    [[ -n "$SERVICE_QUERYSTRING" ]] && SERVICE_URL="${SERVICE_URL}?${SERVICE_QUERYSTRING}"
-    plugn trigger service-action post-link "$PLUGIN_COMMAND_PREFIX" "$SERVICE" "$APP"
-    config_set "$APP" \
-        "EDGEDB_CREDENTIALS_FILE=$PLUGIN_CONFIG_DIRECTORY/credentials/$DATABASE_NAME.json"
-    plugn trigger service-action post-link-complete "$PLUGIN_COMMAND_PREFIX" "$SERVICE" "$APP"
+  [[ -n $SSH_TTY ]] && stty -opost
+  docker exec "$SERVICE_NAME" env PGPASSWORD="$PASSWORD" pg_dump -Fc --no-acl --no-owner -h localhost -U edgedb -w "$DATABASE_NAME"
+  status=$?
+  [[ -n $SSH_TTY ]] && stty opost
+  exit $status
 }
 
-service_unlink() {
-    declare desc="unlink an application from a service"
-    declare SERVICE="$1" APP="$2"
-    update_plugin_scheme_for_app "$APP"
-    local SERVICE_URL=$(service_url "$SERVICE")
-    local SERVICE_NAME="$(get_service_name "$SERVICE")"
-    local EXISTING_CONFIG=$(config_all "$APP")
+service_import() {
+  local SERVICE="$1"
+  local SERVICE_ROOT="$PLUGIN_DATA_ROOT/$SERVICE"
+  local SERVICE_HOST_ROOT="$PLUGIN_DATA_HOST_ROOT/$SERVICE"
+  local SERVICE_NAME="$(get_service_name "$SERVICE")"
+  local DATABASE_NAME="$(get_database_name "$SERVICE")"
+  local PASSWORD="$(service_password "$SERVICE")"
 
-    plugn trigger service-action pre-unlink "$PLUGIN_COMMAND_PREFIX" "$SERVICE" "$APP"
-    remove_from_links_file "$SERVICE" "$APP"
+  if [[ -t 0 ]]; then
+    dokku_log_fail "No data provided on stdin."
+  fi
+  docker exec -i "$SERVICE_NAME" env PGPASSWORD="$PASSWORD" pg_restore -h localhost -cO --if-exists -d "$DATABASE_NAME" -U edgedb -w
+}
 
-    if declare -f -F add_passed_docker_option >/dev/null; then
-        # shellcheck disable=SC2034
-        local passed_phases=(build deploy run)
-        remove_passed_docker_option passed_phases[@] "--link $SERVICE_NAME:$PLUGIN_COMMAND_PREFIX"
-        remove_passed_docker_option passed_phases[@] "--volume $CONFIG_PATH:$PLUGIN_CONFIG_DIRECTORY"
-    else
-        dokku docker-options:remove "$APP" build,deploy,run "--link $SERVICE_NAME:$PLUGIN_COMMAND_PREFIX"
-        dokku docker-options:remove "$APP" build,deploy,run "--volume $CONFIG_PATH:$PLUGIN_CONFIG_DIRECTORY"
+service_start() {
+  local SERVICE="$1"
+  local QUIET="$2"
+  local SERVICE_ROOT="$PLUGIN_DATA_ROOT/$SERVICE"
+  local SERVICE_NAME="$(get_service_name "$SERVICE")"
+  local ID=$(docker ps -aq --no-trunc --filter "status=running" --filter "name=^/$SERVICE_NAME$" --format '{{ .ID }}') || true
+  if [[ -n $ID ]]; then
+    [[ -z $QUIET ]] && dokku_log_warn "Service is already started"
+    if [[ ! -f "$SERVICE_ROOT/ID" ]] || [[ "$(cat "$SERVICE_ROOT/ID")" != "$ID" ]]; then
+      [[ -z $QUIET ]] && dokku_log_warn "Updating local container ID"
+      echo "$ID" >"$SERVICE_ROOT/ID"
     fi
+    return 0
+  fi
 
-    plugn trigger service-action post-unlink "$PLUGIN_COMMAND_PREFIX" "$SERVICE" "$APP"
-    config_unset --no-restart "$APP" "EDGEDB_CREDENTIALS_FILE"
-    plugn trigger service-action post-unlink-complete "$PLUGIN_COMMAND_PREFIX" "$SERVICE" "$APP"
+  dokku_log_info2_quiet "Starting container"
+  local PREVIOUS_ID=$(docker ps -aq --no-trunc --filter "status=exited" --filter "name=^/$SERVICE_NAME$" --format '{{ .ID }}') || true
+  local PASSWORD="$(service_password "$SERVICE")"
+
+  if [[ -n $PREVIOUS_ID ]]; then
+    docker start "$PREVIOUS_ID" >/dev/null
+    service_port_unpause "$SERVICE"
+    dokku_log_info2 "Container started"
+  elif service_image_exists "$SERVICE" && [[ -n "$PASSWORD" ]]; then
+    service_create_container "$SERVICE"
+  else
+    if ! service_image_exists "$SERVICE"; then
+      [[ -f "$SERVICE_ROOT/IMAGE" ]] && PLUGIN_IMAGE="$(cat "$SERVICE_ROOT/IMAGE")"
+      [[ -f "$SERVICE_ROOT/IMAGE_VERSION" ]] && PLUGIN_IMAGE_VERSION="$(cat "$SERVICE_ROOT/IMAGE_VERSION")"
+      dokku_log_verbose_quiet "Missing image $PLUGIN_IMAGE:$PLUGIN_IMAGE_VERSION for $SERVICE"
+    else
+      dokku_log_verbose_quiet "Neither container nor valid configuration exists for $SERVICE"
+    fi
+  fi
+}
+
+service_url() {
+  local SERVICE="$1"
+  local SERVICE_DNS_HOSTNAME="$(service_dns_hostname "$SERVICE")"
+  local DATABASE_NAME="$(get_database_name "$SERVICE")"
+  local PASSWORD="$(service_password "$SERVICE")"
+  echo "$PLUGIN_SCHEME://edgedb:$PASSWORD@$SERVICE_DNS_HOSTNAME:${PLUGIN_DATASTORE_PORTS[0]}/$DATABASE_NAME"
 }
