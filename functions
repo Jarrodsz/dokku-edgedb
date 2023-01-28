@@ -90,6 +90,8 @@ service_create_container() {
   # shellcheck disable=SC2086
   ID=$(
     docker run --name "$SERVICE_NAME" \
+      $MEMORY_LIMIT \
+      $SHM_SIZE \
       --volume "$SERVICE_HOST_ROOT/data:/var/lib/edgedb/data" \
       --env "EDGEDB_SERVER_SECURITY=insecure_dev_mode" \
       --restart always \

@@ -598,9 +598,9 @@ service_link() {
   [[ -n "$SERVICE_QUERYSTRING" ]] && SERVICE_URL="${SERVICE_URL}?${SERVICE_QUERYSTRING}"
   plugn trigger service-action post-link "$PLUGIN_COMMAND_PREFIX" "$SERVICE" "$APP"
   if [[ "$DOKKU_GLOBAL_FLAGS" == *"--no-restart"* ]]; then
-    config_set --no-restart "$APP" "EDGEDB_CREDENTIALS_FILE=$PLUGIN_CONFIG_DIRECTORY/credentials/$DATABASE_NAME.json" "EDGEDB_CLIENT_SECURITY=insecure_dev_mode"
+    config_set --no-restart "$APP" "EDGEDB_CREDENTIALS_FILE=$PLUGIN_CONFIG_DIRECTORY/credentials/$DATABASE_NAME.json"
   else
-    config_set "$APP" "EDGEDB_CREDENTIALS_FILE=$PLUGIN_CONFIG_DIRECTORY/credentials/$DATABASE_NAME.json" "EDGEDB_CLIENT_SECURITY=insecure_dev_mode"
+    config_set "$APP" "EDGEDB_CREDENTIALS_FILE=$PLUGIN_CONFIG_DIRECTORY/credentials/$DATABASE_NAME.json"
   fi
   plugn trigger service-action post-link-complete "$PLUGIN_COMMAND_PREFIX" "$SERVICE" "$APP"
 }
@@ -928,9 +928,9 @@ service_unlink() {
   [[ -z ${LINK[*]} ]] && dokku_log_fail "Not linked to app $APP"
   plugn trigger service-action post-unlink "$PLUGIN_COMMAND_PREFIX" "$SERVICE" "$APP"
   if [[ "$DOKKU_GLOBAL_FLAGS" == *"--no-restart"* ]]; then
-    config_unset --no-restart "$APP" "${LINK[@]}"
+    config_unset --no-restart "$APP" "EDGEDB_CREDENTIALS_FILE"
   else
-    config_unset "$APP" "${LINK[@]}"
+    config_unset "$APP" "EDGEDB_CREDENTIALS_FILE"
   fi
   plugn trigger service-action post-unlink-complete "$PLUGIN_COMMAND_PREFIX" "$SERVICE" "$APP"
 }
