@@ -88,17 +88,27 @@ service_create_container() {
   [[ -f "$SERVICE_ROOT/IMAGE_VERSION" ]] && PLUGIN_IMAGE_VERSION="$(cat "$SERVICE_ROOT/IMAGE_VERSION")"
 
   # shellcheck disable=SC2086
-  ID=$(docker run --name "$SERVICE_NAME" $MEMORY_LIMIT $SHM_SIZE -v "$SERVICE_HOST_ROOT/data:/var/lib/edgedb/data" -e "EDGEDB_PASSWORD=$PASSWORD" --env-file="$SERVICE_ROOT/ENV" --env "EDGEDB_SERVER_SECURITY=insecure_dev_mode" -d --restart always --label dokku=service --label dokku.service=edgedb "$PLUGIN_IMAGE:$PLUGIN_IMAGE_VERSION" $CONFIG_OPTIONS)
+  ID=$(
+    docker run --name "$SERVICE_NAME" \
+      --volume "$SERVICE_HOST_ROOT/data:/var/lib/edgedb/data" \
+      --env "EDGEDB_SERVER_SECURITY=insecure_dev_mode" \
+      --restart always \
+      --label dokku=service \
+      --label dokku.service="$PLUGIN_SERVICE" \
+      --detach \
+      "$PLUGIN_IMAGE"
+  )
   echo "$ID" >"$SERVICE_ROOT/ID"
 
   dokku_log_verbose_quiet "Waiting for container to be ready"
   docker run --rm --link "$SERVICE_NAME:$PLUGIN_COMMAND_PREFIX" "$PLUGIN_WAIT_IMAGE" -p "$PLUGIN_DATASTORE_WAIT_PORT" -t "$PLUGIN_DATASTORE_WAIT_TIME" >/dev/null
 
-  dokku_log_verbose_quiet "Creating edgedb instance"
-  docker exec "$SERVICE_NAME" su - edgedb -c "edgedb instance link $DATABASE_NAME" || dokku_log_verbose_quiet 'Already exists'
-
-  dokku_log_verbose_quiet "Creating edgedb database"
-  docker exec "$SERVICE_NAME" su - edgedb -c "edgedb database create $DATABASE_NAME -I $DATABASE_NAME" || dokku_log_verbose_quiet 'Already exists'
+  dokku_log_verbose_quiet "Linking edgedb instance"
+  docker run --rm --link "$SERVICE_NAME:$PLUGIN_COMMAND_PREFIX" \
+    --env "EDGEDB_SERVER_PASSWORD=$PASSWORD" \
+    --volume "$SERVICE_ROOT/config:/.config/edgedb" \
+    "$PLUGIN_CLI_IMAGE" \
+    -H "edgedb" instance link "$DATABASE_NAME" --port "5656" --user "edgedb" --database "edgedb" --trust-tls-cert
 
   service_port_unpause "$SERVICE"
 
