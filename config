@@ -26,7 +26,7 @@ export PLUGIN_SCHEME="edgedb"
 export PLUGIN_SERVICE="Edgedb"
 export PLUGIN_VARIABLE="EDGEDB"
 export PLUGIN_BASE_PATH="$PLUGIN_PATH"
-export PLUGIN_CONFIG_SUFFIX="data"
+export PLUGIN_CONFIG_SUFFIX="config"
 if [[ -n $DOKKU_API_VERSION ]]; then
   export PLUGIN_BASE_PATH="$PLUGIN_ENABLED_PATH"
 fi
