@@ -580,23 +580,10 @@ service_link() {
   local EXISTING_CONFIG=$(config_all "$APP")
   local LINK=$(echo "$EXISTING_CONFIG" | grep "$SERVICE_URL" | cut -d: -f1) || true
   local SERVICE_DNS_HOSTNAME=$(service_dns_hostname "$SERVICE")
+  local DATABASE_NAME="$(get_database_name "$SERVICE")"
   local LINKS_FILE="$SERVICE_ROOT/LINKS"
-  local ALIAS="$PLUGIN_DEFAULT_ALIAS"
-  local DEFAULT_ALIAS
+  local CONFIG_PATH="$SERVICE_ROOT/config"
 
-  if [[ -n "$SERVICE_ALIAS" ]]; then
-    ALIAS="$SERVICE_ALIAS"
-    ALIAS_IN_USE=$(echo "$EXISTING_CONFIG" | grep "${ALIAS}_URL") || true
-    [[ -n "$ALIAS_IN_USE" ]] && dokku_log_fail "Specified alias $ALIAS already in use"
-  else
-    DEFAULT_ALIAS=$(echo "$EXISTING_CONFIG" | grep "${PLUGIN_DEFAULT_ALIAS}_URL") || true
-    if [[ -n "$DEFAULT_ALIAS" ]]; then
-      ALIAS=$(service_alternative_alias "$EXISTING_CONFIG")
-    fi
-    [[ -z "$ALIAS" ]] && dokku_log_fail "Unable to use default or generated URL alias"
-  fi
-
-  [[ -n $LINK ]] && dokku_log_fail "Already linked as $LINK"
   plugn trigger service-action pre-link "$PLUGIN_COMMAND_PREFIX" "$SERVICE" "$APP"
   add_to_links_file "$SERVICE" "$APP"
 
@@ -604,15 +591,17 @@ service_link() {
     # shellcheck disable=SC2034
     local passed_phases=(build deploy run)
     add_passed_docker_option passed_phases[@] "--link $SERVICE_NAME:$SERVICE_DNS_HOSTNAME"
+    add_passed_docker_option passed_phases[@] "--volume $CONFIG_PATH:$PLUGIN_CONFIG_DIRECTORY"
   else
     dokku docker-options:add "$APP" build,deploy,run "--link $SERVICE_NAME:$SERVICE_DNS_HOSTNAME"
+    dokku docker-options:add "$APP" build,deploy,run "--volume $CONFIG_PATH:$PLUGIN_CONFIG_DIRECTORY"
   fi
   [[ -n "$SERVICE_QUERYSTRING" ]] && SERVICE_URL="${SERVICE_URL}?${SERVICE_QUERYSTRING}"
   plugn trigger service-action post-link "$PLUGIN_COMMAND_PREFIX" "$SERVICE" "$APP"
   if [[ "$DOKKU_GLOBAL_FLAGS" == *"--no-restart"* ]]; then
-    config_set --no-restart "$APP" "${ALIAS}_DSN=$SERVICE_URL" "EDGEDB_CLIENT_SECURITY=insecure_dev_mode"
+    config_set --no-restart "$APP" "EDGEDB_CREDENTIALS_FILE=$PLUGIN_CONFIG_DIRECTORY/credentials/$DATABASE_NAME.json" "EDGEDB_CLIENT_SECURITY=insecure_dev_mode"
   else
-    config_set "$APP" "${ALIAS}_DSN=$SERVICE_URL" "EDGEDB_CLIENT_SECURITY=insecure_dev_mode"
+    config_set "$APP" "EDGEDB_CREDENTIALS_FILE=$PLUGIN_CONFIG_DIRECTORY/credentials/$DATABASE_NAME.json" "EDGEDB_CLIENT_SECURITY=insecure_dev_mode"
   fi
   plugn trigger service-action post-link-complete "$PLUGIN_COMMAND_PREFIX" "$SERVICE" "$APP"
 }
