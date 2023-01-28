@@ -590,10 +590,10 @@ service_link() {
   if declare -f -F add_passed_docker_option >/dev/null; then
     # shellcheck disable=SC2034
     local passed_phases=(build deploy run)
-    add_passed_docker_option passed_phases[@] "--link $SERVICE_NAME:$SERVICE_DNS_HOSTNAME"
+    add_passed_docker_option passed_phases[@] "--link $SERVICE_NAME:$PLUGIN_COMMAND_PREFIX"
     add_passed_docker_option passed_phases[@] "--volume $CONFIG_PATH:$PLUGIN_CONFIG_DIRECTORY"
   else
-    dokku docker-options:add "$APP" build,deploy,run "--link $SERVICE_NAME:$SERVICE_DNS_HOSTNAME"
+    dokku docker-options:add "$APP" build,deploy,run "--link $SERVICE_NAME:$PLUGIN_COMMAND_PREFIX"
     dokku docker-options:add "$APP" build,deploy,run "--volume $CONFIG_PATH:$PLUGIN_CONFIG_DIRECTORY"
   fi
   [[ -n "$SERVICE_QUERYSTRING" ]] && SERVICE_URL="${SERVICE_URL}?${SERVICE_QUERYSTRING}"
