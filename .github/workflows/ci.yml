@@ -19,7 +19,7 @@ jobs:
               DOKKU_VERSION: master
           - name: unit-tests-0.19.0
             env:
-              DOKKU_TAG: v0.19.0
+              DOKKU_VERSION: v0.19.0
 
     name: unit-tests-${{ matrix.name }}
     runs-on: ubuntu-22.04
