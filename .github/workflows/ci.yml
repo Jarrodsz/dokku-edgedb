@@ -22,11 +22,12 @@ jobs:
               DOKKU_TAG: v0.19.0
 
     name: unit-tests-${{ matrix.name }}
-    runs-on: ubuntu-18.04
-    env:
-      DOKKU_VERSION: ${{ matrix.env.DOKKU_VERSION }}
+    runs-on: ubuntu-22.04
 
     steps:
+      - name: Add dokku version to environment
+        run: echo "DOKKU_VERSION=${{ matrix.env.DOKKU_VERSION }}" >> $GITHUB_ENV
+
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
