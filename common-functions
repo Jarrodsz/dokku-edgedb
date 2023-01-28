@@ -610,9 +610,9 @@ service_link() {
   [[ -n "$SERVICE_QUERYSTRING" ]] && SERVICE_URL="${SERVICE_URL}?${SERVICE_QUERYSTRING}"
   plugn trigger service-action post-link "$PLUGIN_COMMAND_PREFIX" "$SERVICE" "$APP"
   if [[ "$DOKKU_GLOBAL_FLAGS" == *"--no-restart"* ]]; then
-    config_set --no-restart "$APP" "${ALIAS}_URL=$SERVICE_URL"
+    config_set --no-restart "$APP" "${ALIAS}_DSN=$SERVICE_URL" "EDGEDB_CLIENT_SECURITY=insecure_dev_mode"
   else
-    config_set "$APP" "${ALIAS}_URL=$SERVICE_URL"
+    config_set "$APP" "${ALIAS}_DSN=$SERVICE_URL" "EDGEDB_CLIENT_SECURITY=insecure_dev_mode"
   fi
   plugn trigger service-action post-link-complete "$PLUGIN_COMMAND_PREFIX" "$SERVICE" "$APP"
 }
@@ -684,66 +684,66 @@ service_parse_args() {
   for arg in "$@"; do
     shift
     case "$arg" in
-      "--alias") set -- "$@" "-a" ;;
-      "--config-options") set -- "$@" "-c" ;;
-      "--custom-env") set -- "$@" "-C" ;;
-      "--database") set -- "$@" "-d" ;;
-      "--image-version") set -- "$@" "-I" ;;
-      "--image") set -- "$@" "-i" ;;
-      "--memory") set -- "$@" "-m" ;;
-      "--password") set -- "$@" "-p" ;;
-      "--querystring") set -- "$@" "-q" ;;
-      "--restart-apps") set -- "$@" "-R" ;;
-      "--root-password") set -- "$@" "-r" ;;
-      "--shm-size") set -- "$@" "-s" ;;
-      "--user") set -- "$@" "-u" ;;
-      *) set -- "$@" "$arg" ;;
+    "--alias") set -- "$@" "-a" ;;
+    "--config-options") set -- "$@" "-c" ;;
+    "--custom-env") set -- "$@" "-C" ;;
+    "--database") set -- "$@" "-d" ;;
+    "--image-version") set -- "$@" "-I" ;;
+    "--image") set -- "$@" "-i" ;;
+    "--memory") set -- "$@" "-m" ;;
+    "--password") set -- "$@" "-p" ;;
+    "--querystring") set -- "$@" "-q" ;;
+    "--restart-apps") set -- "$@" "-R" ;;
+    "--root-password") set -- "$@" "-r" ;;
+    "--shm-size") set -- "$@" "-s" ;;
+    "--user") set -- "$@" "-u" ;;
+    *) set -- "$@" "$arg" ;;
     esac
   done
 
   OPTIND=1
   while getopts "a:c:C:d:i:I:m:p:q:R:r:s:u:" opt; do
     case "$opt" in
-      a)
-        SERVICE_ALIAS="${OPTARG^^}"
-        export SERVICE_ALIAS="${SERVICE_ALIAS%_URL}"
-        ;;
-      c)
-        export PLUGIN_CONFIG_OPTIONS=$OPTARG
-        ;;
-      C)
-        export SERVICE_CUSTOM_ENV=$OPTARG
-        ;;
-      d)
-        export SERVICE_DATABASE=$OPTARG
-        ;;
-      i)
-        export PLUGIN_IMAGE=$OPTARG
-        ;;
-      I)
-        export PLUGIN_IMAGE_VERSION=$OPTARG
-        ;;
-      m)
-        export SERVICE_MEMORY=$OPTARG
-        ;;
-      p)
-        export SERVICE_PASSWORD=$OPTARG
-        ;;
-      q)
-        export SERVICE_QUERYSTRING=${OPTARG#"?"}
-        ;;
-      R)
-        export SERVICE_RESTART_APPS=$OPTARG
-        ;;
-      r)
-        export SERVICE_ROOT_PASSWORD=$OPTARG
-        ;;
-      s)
-        export SERVICE_SHM_SIZE=$OPTARG
-        ;;
-      u)
-        export SERVICE_USER=$OPTARG
-        ;;
+    a)
+      SERVICE_ALIAS="${OPTARG^^}"
+      export SERVICE_ALIAS="${SERVICE_ALIAS%_URL}"
+      ;;
+    c)
+      export PLUGIN_CONFIG_OPTIONS=$OPTARG
+      ;;
+    C)
+      export SERVICE_CUSTOM_ENV=$OPTARG
+      ;;
+    d)
+      export SERVICE_DATABASE=$OPTARG
+      ;;
+    i)
+      export PLUGIN_IMAGE=$OPTARG
+      ;;
+    I)
+      export PLUGIN_IMAGE_VERSION=$OPTARG
+      ;;
+    m)
+      export SERVICE_MEMORY=$OPTARG
+      ;;
+    p)
+      export SERVICE_PASSWORD=$OPTARG
+      ;;
+    q)
+      export SERVICE_QUERYSTRING=${OPTARG#"?"}
+      ;;
+    R)
+      export SERVICE_RESTART_APPS=$OPTARG
+      ;;
+    r)
+      export SERVICE_ROOT_PASSWORD=$OPTARG
+      ;;
+    s)
+      export SERVICE_SHM_SIZE=$OPTARG
+      ;;
+    u)
+      export SERVICE_USER=$OPTARG
+      ;;
     esac
   done
   shift "$((OPTIND - 1))" # remove options from positional parameters
