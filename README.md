@@ -109,14 +109,6 @@ export EDGEDB_CUSTOM_ENV="USER=alpha;HOST=beta"
 dokku edgedb:create lollipop
 ```
 
-Official Edgedb docker images does not include postgis extension (amongst others). The
-following example creates a new edgedb service using `postgis/postgis:13-3.1` image, which
-includes the `postgis` extension.
-
-```shell
-dokku edgedb:create postgis-database --image "postgis/postgis" --image-version "13-3.1"
-```
-
 ### print the service information
 
 ```shell
@@ -446,39 +438,6 @@ You can upgrade an existing service to a new image or image-version:
 dokku edgedb:upgrade lollipop
 ```
 
-Edgedb does not handle upgrading data for major versions automatically (eg. 11 => 12).
-Upgrades should be done manually. Users are encouraged to upgrade to the latest minor
-release for their edgedb version before performing a major upgrade.
-
-While there are many ways to upgrade a edgedb database, for safety purposes, it is recommended that an upgrade is performed by exporting the data from an existing database and importing it into a new database. This also allows testing to ensure that applications interact with the database correctly after the upgrade, and can be used in a staging environment.
-
-The following is an example of how to upgrade a edgedb database named `lollipop-11` from 11.13 to 12.8.
-
-```shell
-# stop any linked apps
-dokku ps:stop linked-app
-
-# export the database contents
-dokku edgedb:export lollipop-11 > /tmp/lollipop-11.export
-
-# create a new database at the desired version
-dokku edgedb:create lollipop-12 --image-version 12.8
-
-# import the export file
-dokku edgedb:import lollipop-12 < /tmp/lollipop-11.export
-
-# run any sql tests against the new database to verify the import went smoothly
-
-# unlink the old database from your apps
-dokku edgedb:unlink lollipop-11 linked-app
-
-# link the new database to your apps
-dokku edgedb:link lollipop-12 linked-app
-
-# start the linked apps again
-dokku ps:start linked-app
-```
-
 ### Service Automation
 
 Service scripting can be executed using the following commands:
@@ -593,13 +552,6 @@ You can redirect this output to a file:
 
 ```shell
 dokku edgedb:export lollipop > data.dump
-```
-
-Note that the export will result in a file containing the binary edgedb export data. It can
-be converted to plain text using `pg_restore` as follows
-
-```shell
-pg_restore data.dump -f plain.sql
 ```
 
 ### Backups

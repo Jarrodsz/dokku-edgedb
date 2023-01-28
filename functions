@@ -121,10 +121,14 @@ service_export() {
   local SERVICE_ROOT="$PLUGIN_DATA_ROOT/$SERVICE"
   local SERVICE_NAME="$(get_service_name "$SERVICE")"
   local DATABASE_NAME="$(get_database_name "$SERVICE")"
-  local PASSWORD="$(service_password "$SERVICE")"
 
   [[ -n $SSH_TTY ]] && stty -opost
-  docker exec "$SERVICE_NAME" env PGPASSWORD="$PASSWORD" pg_dump -Fc --no-acl --no-owner -h localhost -U edgedb -w "$DATABASE_NAME"
+  docker run --rm --link "$SERVICE_NAME:$PLUGIN_COMMAND_PREFIX" \
+    --volume "$SERVICE_ROOT/config:/.config/edgedb" \
+    --env "EDGEDB_CREDENTIALS_FILE=/.config/edgedb/credentials/$DATABASE_NAME.json" \
+    "$PLUGIN_CLI_IMAGE" \
+    dump -
+
   status=$?
   [[ -n $SSH_TTY ]] && stty opost
   exit $status
@@ -141,7 +145,11 @@ service_import() {
   if [[ -t 0 ]]; then
     dokku_log_fail "No data provided on stdin."
   fi
-  docker exec -i "$SERVICE_NAME" env PGPASSWORD="$PASSWORD" pg_restore -h localhost -cO --if-exists -d "$DATABASE_NAME" -U edgedb -w
+  docker run --rm --link "$SERVICE_NAME:$PLUGIN_COMMAND_PREFIX" \
+    --volume "$SERVICE_ROOT/config:/.config/edgedb" \
+    --env "EDGEDB_CREDENTIALS_FILE=/.config/edgedb/credentials/$DATABASE_NAME.json" \
+    "$PLUGIN_CLI_IMAGE" \
+    restore -
 }
 
 service_start() {
