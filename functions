@@ -92,7 +92,7 @@ service_create_container() {
   echo "$ID" >"$SERVICE_ROOT/ID"
 
   dokku_log_verbose_quiet "Waiting for container to be ready"
-  docker run --rm --link "$SERVICE_NAME:$PLUGIN_COMMAND_PREFIX" "$PLUGIN_WAIT_IMAGE" -p "$PLUGIN_DATASTORE_WAIT_PORT" -t 120 >/dev/null
+  docker run --rm --link "$SERVICE_NAME:$PLUGIN_COMMAND_PREFIX" "$PLUGIN_WAIT_IMAGE" -p "$PLUGIN_DATASTORE_WAIT_PORT" -t "$PLUGIN_DATASTORE_WAIT_TIME" >/dev/null
 
   dokku_log_verbose_quiet "Creating edgedb instance"
   docker exec "$SERVICE_NAME" su - edgedb -c "edgedb instance link $DATABASE_NAME" || dokku_log_verbose_quiet 'Already exists'
