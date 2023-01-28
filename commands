@@ -1,25 +1,18 @@
 #!/usr/bin/env bash
-set -eo pipefail
-[[ "$DOKKU_TRACE" ]] && set -x
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/config"
+[[ " help $PLUGIN_COMMAND_PREFIX:help $PLUGIN_COMMAND_PREFIX $PLUGIN_COMMAND_PREFIX:default " == *" $1 "* ]] || [[ "$1" == "$PLUGIN_COMMAND_PREFIX:"* ]] || exit "$DOKKU_NOT_IMPLEMENTED_EXIT"
+source "$PLUGIN_CORE_AVAILABLE_PATH/common/functions"
+set -eo pipefail
+[[ $DOKKU_TRACE ]] && set -x
 
-case "$1" in
-help | edgedb:help)
-    help_content_func() {
-        cat <<help_content
-    $PLUGIN_SERVICE, Plugin for managing Edgedb services
-help_content
-    }
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/help-functions"
 
-    if [[ $1 = "$PLUGIN_SERVICE:help" ]]; then
-        echo -e "usage: dokku ${PLUGIN_SERVICE}[:COMMAND]"
-    else
-        help_content_func
-    fi
-    ;;
+if [[ ! -d $PLUGIN_CONFIG_ROOT ]]; then
+  dokku_log_fail "$PLUGIN_SERVICE: Please run: sudo dokku plugin:install"
+fi
 
-*)
-    exit "$DOKKU_NOT_IMPLEMENTED_EXIT"
-    ;;
+if [[ ! -d $PLUGIN_DATA_ROOT ]]; then
+  dokku_log_fail "$PLUGIN_SERVICE: Please run: sudo dokku plugin:install"
+fi
 
-esac
+fn-help "$@"
