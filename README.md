@@ -24,7 +24,7 @@ use this to connect to the edgedb server.
 
 ```shell
 # on 0.19.x+
-sudo dokku plugin:install https://github.com/dokku/dokku-edgedb.git edgedb
+sudo dokku plugin:install https://github.com/ignisda/dokku-edgedb.git edgedb
 ```
 
 ## Commands
@@ -94,7 +94,7 @@ Create a edgedb service named lollipop:
 dokku edgedb:create lollipop
 ```
 
-You can also specify the image and image version to use for the service. It _must_ be compatible with the edgedb/edgedb image.
+You can also specify the image and image version to use for the service. It *must* be compatible with the edgedb/edgedb image.
 
 ```shell
 export EDGEDB_IMAGE="edgedb/edgedb"
@@ -162,7 +162,7 @@ dokku edgedb:info lollipop --version
 
 ```shell
 # usage
-dokku edgedb:list
+dokku edgedb:list 
 ```
 
 List all services:
@@ -716,7 +716,7 @@ flags:
 
 Schedule a backup:
 
-> 'schedule' is a crontab expression, eg. "0 3 \* \* \*" for each day at 3am
+> 'schedule' is a crontab expression, eg. "0 3 * * *" for each day at 3am
 
 ```shell
 dokku edgedb:backup-schedule lollipop "0 3 * * *" my-s3-bucket
