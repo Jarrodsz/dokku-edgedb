@@ -5,7 +5,7 @@ import os
 import re
 
 
-def compile(service, version, variable, alias, image, scheme, ports, sponsors, options, unimplemented, dokku_version):
+def compile(service, version, variable, alias, image, scheme, ports, sponsors, options, unimplemented, dokku_version, notes):
     prefix = "\n\n".join([
         header(service),
         description(service, image, version),
@@ -20,6 +20,7 @@ def compile(service, version, variable, alias, image, scheme, ports, sponsors, o
             [
                 prefix,
                 requirements_section(dokku_version),
+                notes(),
                 installation_section(service, dokku_version),
                 commands_section(service, variable, alias, image, scheme, ports, unimplemented),
                 usage_section(service, variable, alias, image, scheme, ports, options, unimplemented),
@@ -427,6 +428,23 @@ def command_data(command, service, variable, alias, image, scheme, ports):
     }
 
 
+def notes():
+    return """
+## How it works
+
+Since edgedb can be connected only by an authenticated client (TLS certificates MUST be
+present), this plugin will create an edgedb credentials file and add the
+`EDGEDB_CREDENTIALS_FILE` configuration to the app. All edgedb clients can automatically
+use this to connect to the edgedb server.
+
+## Important notes
+
+- The edgedb server usually requires more than 2GB of RAM to _**start**_ (not run). If you do not have
+  enough RAM, you will have to create a swap file. Please refer to tutorials online on how to
+  do this.
+""".strip()
+
+
 def process_sentence(sentence_lines):
     sentence_lines = " ".join(sentence_lines)
     sentences = ". ".join(
@@ -525,7 +543,7 @@ def main():
                 sponsors = re.search("\[([\"\w\s,_-]+)\]", line).group(1)
                 sponsors = [s.strip("\"") for s in sponsors.split(",")]
 
-    text = compile(service, version, variable, alias, image, scheme, ports, sponsors, options, unimplemented, "0.19.x+")
+    text = compile(service, version, variable, alias, image, scheme, ports, sponsors, options, unimplemented, "0.19.x+", notes)
 
     base_path = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
     readme_file = os.path.join(base_path, "README.md")

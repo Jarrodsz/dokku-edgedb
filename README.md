@@ -7,6 +7,19 @@ Official edgedb plugin for dokku. Currently defaults to installing [edgedb/edged
 - dokku 0.19.x+
 - docker 1.8.x
 
+## How it works
+
+Since edgedb can be connected only by an authenticated client (TLS certificates MUST be
+present), this plugin will create an edgedb credentials file and add the
+`EDGEDB_CREDENTIALS_FILE` configuration to the app. All edgedb clients can automatically
+use this to connect to the edgedb server.
+
+## Important notes
+
+- The edgedb server usually requires more than 2GB of RAM to _**start**_ (not run). If you do not have
+  enough RAM, you will have to create a swap file. Please refer to tutorials online on how to
+  do this.
+
 ## Installation
 
 ```shell
@@ -81,7 +94,7 @@ Create a edgedb service named lollipop:
 dokku edgedb:create lollipop
 ```
 
-You can also specify the image and image version to use for the service. It *must* be compatible with the edgedb/edgedb image.
+You can also specify the image and image version to use for the service. It _must_ be compatible with the edgedb/edgedb image.
 
 ```shell
 export EDGEDB_IMAGE="edgedb/edgedb"
@@ -149,7 +162,7 @@ dokku edgedb:info lollipop --version
 
 ```shell
 # usage
-dokku edgedb:list 
+dokku edgedb:list
 ```
 
 List all services:
@@ -703,7 +716,7 @@ flags:
 
 Schedule a backup:
 
-> 'schedule' is a crontab expression, eg. "0 3 * * *" for each day at 3am
+> 'schedule' is a crontab expression, eg. "0 3 \* \* \*" for each day at 3am
 
 ```shell
 dokku edgedb:backup-schedule lollipop "0 3 * * *" my-s3-bucket
