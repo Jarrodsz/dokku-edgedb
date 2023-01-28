@@ -457,13 +457,6 @@ service_container_rm() {
   fi
 }
 
-service_dns_hostname() {
-  declare desc="retrieve the alias of a service"
-  declare SERVICE="$1"
-  local SERVICE_NAME="$(get_service_name "$SERVICE")"
-  echo "$SERVICE_NAME" | tr ._ -
-}
-
 service_enter() {
   declare desc="enter running app container of specified proc type"
   declare SERVICE="$1" && shift 1
