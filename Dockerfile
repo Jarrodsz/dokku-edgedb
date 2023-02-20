@@ -1,1 +1,1 @@
-FROM edgedb/edgedb:2.10
+FROM edgedb/edgedb:2.11
