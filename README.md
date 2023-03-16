@@ -1,6 +1,6 @@
 # dokku edgedb
 
-Official edgedb plugin for dokku. Currently defaults to installing [edgedb/edgedb 2.9](https://hub.docker.com/r/edgedb/edgedb/).
+Official edgedb plugin for dokku. Currently defaults to installing [edgedb/edgedb 2.11](https://hub.docker.com/r/edgedb/edgedb/).
 
 ## Requirements
 
@@ -223,12 +223,6 @@ DOKKU_EDGEDB_LOLLIPOP_PORT_5656_TCP_PORT=5656
 DOKKU_EDGEDB_LOLLIPOP_PORT_5656_TCP_ADDR=172.17.0.1
 ```
 
-The following will be set on the linked application by default:
-
-```
-EDGEDB_URL=edgedb://lollipop:SOME_PASSWORD@dokku-edgedb-lollipop:5656/lollipop
-```
-
 The host exposed here only works internally in docker containers. If you want your container to be reachable from outside, you should use the `expose` subcommand. Another service can be linked to your app:
 
 ```shell
@@ -240,12 +234,6 @@ It is possible to change the protocol for `EDGEDB_URL` by setting the environmen
 ```shell
 dokku config:set playground EDGEDB_DATABASE_SCHEME=edgedb2
 dokku edgedb:link lollipop playground
-```
-
-This will cause `EDGEDB_URL` to be set as:
-
-```
-edgedb2://lollipop:SOME_PASSWORD@dokku-edgedb-lollipop:5656/lollipop
 ```
 
 ### unlink the edgedb service from the app

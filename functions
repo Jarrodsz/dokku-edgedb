@@ -110,7 +110,7 @@ service_create_container() {
     --env "EDGEDB_SERVER_PASSWORD=$PASSWORD" \
     --volume "$SERVICE_ROOT/config:/.config/edgedb" \
     "$PLUGIN_CLI_IMAGE" \
-    -H "edgedb" instance link "$DATABASE_NAME" --port "5656" --user "edgedb" --database "edgedb" --trust-tls-cert
+    -H "edgedb" instance link "$DATABASE_NAME" --port "5656" --user "edgedb" --database "edgedb" --trust-tls-cert --non-interactive --overwrite
 
   service_port_unpause "$SERVICE"
 
