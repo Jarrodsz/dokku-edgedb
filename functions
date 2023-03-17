@@ -13,12 +13,17 @@ fi
 service_connect() {
   local SERVICE="$1"
   local SERVICE_ROOT="$PLUGIN_DATA_ROOT/$SERVICE"
+  local SERVICE_HOST_ROOT="$PLUGIN_DATA_HOST_ROOT/$SERVICE"
   local SERVICE_NAME="$(get_service_name "$SERVICE")"
   local DATABASE_NAME="$(get_database_name "$SERVICE")"
   local SERVICE_TTY_OPTS
   has_tty && SERVICE_TTY_OPTS="-t"
 
-  docker exec --env=LANG=C.UTF-8 --env=LC_ALL=C.UTF-8 -i $SERVICE_TTY_OPTS "$SERVICE_NAME" edgedb -h localhost -U edgedb "$DATABASE_NAME"
+  docker run \
+    --link "$SERVICE_NAME:$PLUGIN_COMMAND_PREFIX" \
+    --volume "$SERVICE_ROOT/config:/.config/edgedb" \
+    -i $SERVICE_TTY_OPTS "$PLUGIN_CLI_IMAGE" \
+    --instance "$DATABASE_NAME"
 }
 
 service_create() {
