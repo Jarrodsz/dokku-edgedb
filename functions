@@ -132,9 +132,8 @@ service_export() {
   [[ -n $SSH_TTY ]] && stty -opost
   docker run --rm --link "$SERVICE_NAME:$PLUGIN_COMMAND_PREFIX" \
     --volume "$SERVICE_ROOT/config:/.config/edgedb" \
-    --env "EDGEDB_CREDENTIALS_FILE=/.config/edgedb/credentials/$DATABASE_NAME.json" \
     "$PLUGIN_CLI_IMAGE" \
-    dump -
+    dump --instance "$DATABASE_NAME" -
 
   status=$?
   [[ -n $SSH_TTY ]] && stty opost
@@ -154,9 +153,8 @@ service_import() {
   fi
   docker run --rm --link "$SERVICE_NAME:$PLUGIN_COMMAND_PREFIX" \
     --volume "$SERVICE_ROOT/config:/.config/edgedb" \
-    --env "EDGEDB_CREDENTIALS_FILE=/.config/edgedb/credentials/$DATABASE_NAME.json" \
     "$PLUGIN_CLI_IMAGE" \
-    restore -
+    restore --instance "$DATABASE_NAME" -
 }
 
 service_start() {
