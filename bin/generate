@@ -47,7 +47,7 @@ def description(service, full_image, version):
         base = "r/" + full_image.split("/")[0]
         image = full_image.split("/")[1]
 
-    return f"Official {service} plugin for dokku. Currently defaults to installing [{full_image} {version}](https://hub.docker.com/{base}/{image}/)."
+    return f"Unofficial {service} plugin for dokku. Currently defaults to installing [{full_image} {version}](https://hub.docker.com/{base}/{image}/)."
 
 
 def sponsors_section(service, sponsors):

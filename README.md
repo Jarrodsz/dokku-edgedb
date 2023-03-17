@@ -1,6 +1,6 @@
 # dokku edgedb
 
-Official edgedb plugin for dokku. Currently defaults to installing [edgedb/edgedb 2.11](https://hub.docker.com/r/edgedb/edgedb/).
+Unofficial edgedb plugin for dokku. Currently defaults to installing [edgedb/edgedb nightly](https://hub.docker.com/r/edgedb/edgedb/).
 
 ## Requirements
 
@@ -520,7 +520,7 @@ dokku edgedb:import <service>
 Import a datastore dump:
 
 ```shell
-dokku edgedb:import lollipop < data.dump
+dokku edgedb:import lollipop /tmp/data.dump
 ```
 
 ### export a dump of the edgedb service database

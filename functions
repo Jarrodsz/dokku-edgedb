@@ -142,19 +142,18 @@ service_export() {
 
 service_import() {
   local SERVICE="$1"
+  local FILE="$2"
   local SERVICE_ROOT="$PLUGIN_DATA_ROOT/$SERVICE"
   local SERVICE_HOST_ROOT="$PLUGIN_DATA_HOST_ROOT/$SERVICE"
   local SERVICE_NAME="$(get_service_name "$SERVICE")"
   local DATABASE_NAME="$(get_database_name "$SERVICE")"
   local PASSWORD="$(service_password "$SERVICE")"
 
-  if [[ -t 0 ]]; then
-    dokku_log_fail "No data provided on stdin."
-  fi
   docker run --rm --link "$SERVICE_NAME:$PLUGIN_COMMAND_PREFIX" \
     --volume "$SERVICE_ROOT/config:/.config/edgedb" \
+    --volume "$FILE:/tmp/dump.sql" \
     "$PLUGIN_CLI_IMAGE" \
-    restore --instance "$DATABASE_NAME" -
+    restore --instance "$DATABASE_NAME" /tmp/dump.sql
 }
 
 service_start() {
