@@ -99,6 +99,7 @@ service_create_container() {
       $SHM_SIZE \
       --volume "$SERVICE_HOST_ROOT/data:/var/lib/edgedb/data" \
       --env "EDGEDB_SERVER_SECURITY=insecure_dev_mode" \
+      --env "EDGEDB_SERVER_ADMIN_UI=enabled" \
       --restart always \
       --label dokku=service \
       --label dokku.service="$PLUGIN_SERVICE" \
