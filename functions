@@ -141,6 +141,13 @@ service_export() {
   exit $status
 }
 
+service_expose_admin() {
+  declare SERVICE="$1" DOMAIN="$2"
+  local SERVICE_NAME="$(get_service_name "$SERVICE")"
+  # TODO: add the expose code
+  echo "$SERVICE_NAME"
+}
+
 service_import() {
   local SERVICE="$1"
   local FILE="$2"

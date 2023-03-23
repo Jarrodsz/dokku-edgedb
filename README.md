@@ -47,6 +47,7 @@ edgedb:enter <service>                             # enter or run a command in a
 edgedb:exists <service>                            # check if the edgedb service exists
 edgedb:export <service>                            # export a dump of the edgedb service database
 edgedb:expose <service> <ports...>                 # expose a edgedb service on custom host:port if provided (random port on the 0.0.0.0 interface if otherwise unspecified)
+edgedb:expose-admin <service> <domain>             # expose a edgedb service's admin on the specified domain
 edgedb:import <service>                            # import a dump into the edgedb service database
 edgedb:info <service> [--single-info-flag]         # print the service information
 edgedb:link <service> <app> [--link-flags...]      # link the edgedb service to the app
@@ -308,6 +309,19 @@ Expose the service on the service's normal ports, with the first on a specified 
 
 ```shell
 dokku edgedb:expose lollipop 127.0.0.1:5656
+```
+
+### expose a edgedb service's admin on the specified domain
+
+```shell
+# usage
+dokku edgedb:expose-admin <service> <domain>
+```
+
+Expose the service's admin `UI` on a specific domain.
+
+```shell
+dokku edgedb:expose-admin lollipop lollipop.dokku.me
 ```
 
 ### unexpose a previously exposed edgedb service

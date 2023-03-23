@@ -143,6 +143,7 @@ def usage_lifecycle(service, variable, alias, image, scheme, ports, options, uni
         "connect",
         "enter",
         "expose",
+        "expose-admin",
         "unexpose",
         "promote",
         "start",
