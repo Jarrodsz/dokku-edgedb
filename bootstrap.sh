@@ -1,0 +1,242 @@
+#!/usr/bin/env bash
+set -eo pipefail
+[[ $TRACE ]] && set -x
+
+# A script to bootstrap dokku.
+# It expects to be run on Ubuntu 20.04/22.04/24.04 via 'sudo`
+# If installing a tag higher than 0.3.13, it may install dokku via a package (so long as the package is higher than 0.3.13)
+# It checks out the dokku source code from GitHub into ~/dokku and then runs 'make install' from dokku source.
+
+# We wrap this whole script in functions, so that we won't execute
+# until the entire script is downloaded.
+# That's good because it prevents our output overlapping with wget's.
+# It also means that we can't run a partially downloaded script.
+
+SUPPORTED_VERSIONS="Debian [11, 12], Ubuntu [20.04, 22.04, 24.04]"
+
+log-fail() {
+  declare desc="log fail formatter"
+  echo "$@" 1>&2
+  exit 1
+}
+
+ensure-environment() {
+  local FREE_MEMORY
+  if [[ -z "$DOKKU_TAG" ]]; then
+    echo "Preparing to install $DOKKU_REPO..."
+  else
+    echo "Preparing to install $DOKKU_TAG from $DOKKU_REPO..."
+  fi
+
+  hostname -f &>/dev/null || {
+    log-fail "This installation script requires that you have a hostname set for the instance. Please set a hostname for 127.0.0.1 in your /etc/hosts"
+  }
+
+  FREE_MEMORY=$(grep MemTotal /proc/meminfo | awk '{print $2}')
+  if [[ "$FREE_MEMORY" -lt 1003600 ]]; then
+    echo "For dokku to build containers, it is strongly suggested that you have 1024 megabytes or more of free memory"
+    echo "If necessary, please consult this document to setup swap: https://dokku.com/docs/getting-started/advanced-installation/#vms-with-less-than-1-gb-of-memory"
+  fi
+}
+
+install-requirements() {
+  echo "--> Ensuring we have the proper dependencies"
+
+  case "$DOKKU_DISTRO" in
+    debian)
+      if ! dpkg -l | grep -q gpg-agent; then
+        apt-get update -qq >/dev/null
+        apt-get -qq -y --no-install-recommends install gpg-agent
+      fi
+      if ! dpkg -l | grep -q software-properties-common; then
+        apt-get update -qq >/dev/null
+        apt-get -qq -y --no-install-recommends install software-properties-common
+      fi
+      ;;
+    ubuntu)
+      if ! dpkg -l | grep -q gpg-agent; then
+        apt-get update -qq >/dev/null
+        apt-get -qq -y --no-install-recommends install gpg-agent
+      fi
+      if ! dpkg -l | grep -q software-properties-common; then
+        apt-get update -qq >/dev/null
+        apt-get -qq -y --no-install-recommends install software-properties-common
+      fi
+
+      add-apt-repository -y universe >/dev/null
+      apt-get update -qq >/dev/null
+      ;;
+  esac
+}
+
+install-dokku() {
+  if ! command -v dokku &>/dev/null; then
+    echo "--> Note: Installing dokku for the first time will result in removal of"
+    echo "    files in the nginx 'sites-enabled' directory. Please manually"
+    echo "    restore any files that may be removed after the installation and"
+    echo "    web setup is complete."
+    echo ""
+    echo "    Installation will continue in 10 seconds."
+    sleep 10
+  fi
+
+  if [[ -n $DOKKU_BRANCH ]]; then
+    install-dokku-from-source "origin/$DOKKU_BRANCH"
+  elif [[ -n $DOKKU_TAG ]]; then
+    local DOKKU_SEMVER="${DOKKU_TAG//v/}"
+    major=$(echo "$DOKKU_SEMVER" | awk '{split($0,a,"."); print a[1]}')
+    minor=$(echo "$DOKKU_SEMVER" | awk '{split($0,a,"."); print a[2]}')
+    patch=$(echo "$DOKKU_SEMVER" | awk '{split($0,a,"."); print a[3]}')
+
+    use_plugin=false
+    # 0.4.0 implemented a `plugin` plugin
+    if [[ "$major" -eq "0" ]] && [[ "$minor" -ge "4" ]] && [[ "$patch" -ge "0" ]]; then
+      use_plugin=true
+    elif [[ "$major" -ge "1" ]]; then
+      use_plugin=true
+    fi
+
+    # 0.3.13 was the first version with a debian package
+    if [[ "$major" -eq "0" ]] && [[ "$minor" -eq "3" ]] && [[ "$patch" -ge "13" ]]; then
+      install-dokku-from-package "$DOKKU_SEMVER"
+      echo "--> Running post-install dependency installation"
+      dokku plugins-install-dependencies
+    elif [[ "$use_plugin" == "true" ]]; then
+      install-dokku-from-package "$DOKKU_SEMVER"
+      echo "--> Running post-install dependency installation"
+      sudo -E dokku plugin:install-dependencies --core
+    else
+      install-dokku-from-source "$DOKKU_TAG"
+    fi
+  else
+    install-dokku-from-package
+    echo "--> Running post-install dependency installation"
+    sudo -E dokku plugin:install-dependencies --core
+  fi
+}
+
+install-dokku-from-source() {
+  local DOKKU_CHECKOUT="$1"
+
+  if ! command -v apt-get &>/dev/null; then
+    log-fail "This installation script requires apt-get. For manual installation instructions, consult https://dokku.com/docs/getting-started/advanced-installation/"
+  fi
+
+  apt-get -qq -y --no-install-recommends install sudo git make software-properties-common
+  cd /root
+  if [[ ! -d /root/dokku ]]; then
+    git clone "$DOKKU_REPO" /root/dokku
+  fi
+
+  cd /root/dokku
+  git fetch origin
+  [[ -n $DOKKU_CHECKOUT ]] && git checkout "$DOKKU_CHECKOUT"
+  make install
+}
+
+install-dokku-from-package() {
+  case "$DOKKU_DISTRO" in
+    debian | ubuntu)
+      install-dokku-from-deb-package "$@"
+      ;;
+    *)
+      log-fail "Unsupported Linux distribution. For manual installation instructions, consult https://dokku.com/docs/getting-started/advanced-installation/"
+      ;;
+  esac
+}
+
+in-array() {
+  declare desc="return true if value ($1) is in list (all other arguments)"
+
+  local e
+  for e in "${@:2}"; do
+    [[ "$e" == "$1" ]] && return 0
+  done
+  return 1
+}
+
+install-dokku-from-deb-package() {
+  local DOKKU_CHECKOUT="$1"
+  local NO_INSTALL_RECOMMENDS=${DOKKU_NO_INSTALL_RECOMMENDS:=""}
+  local OS_ID
+
+  if ! in-array "$DOKKU_DISTRO_VERSION" "20.04" "22.04" "24.04" "10" "11" "12"; then
+    log-fail "Unsupported Linux distribution. Only the following versions are supported: $SUPPORTED_VERSIONS"
+  fi
+
+  if [[ -n $DOKKU_DOCKERFILE ]]; then
+    NO_INSTALL_RECOMMENDS=" --no-install-recommends "
+  fi
+
+  if ! command -v docker &>/dev/null; then
+    echo "--> Installing docker"
+    if uname -r | grep -q linode; then
+      echo "--> NOTE: Using Linode? Docker may complain about missing AUFS support."
+      echo "    You can safely ignore this warning."
+      echo ""
+      echo "    Installation will continue in 10 seconds."
+      sleep 10
+    fi
+    export CHANNEL=stable
+    wget -nv -O - https://get.docker.com/ | sh
+  fi
+
+  OS_ID="$(lsb_release -cs 2>/dev/null || echo "noble")"
+  if ! in-array "$DOKKU_DISTRO" "debian" "ubuntu" "raspbian"; then
+    DOKKU_DISTRO="ubuntu"
+    OS_ID="noble"
+  fi
+
+  if [[ "$DOKKU_DISTRO" == "ubuntu" ]]; then
+    OS_IDS=("focal" "jammy" "noble")
+    if ! in-array "$OS_ID" "${OS_IDS[@]}"; then
+      OS_ID="noble"
+    fi
+  elif [[ "$DOKKU_DISTRO" == "debian" ]]; then
+    OS_IDS=("bullseye" "bookworm")
+    if ! in-array "$OS_ID" "${OS_IDS[@]}"; then
+      OS_ID="bookworm"
+    fi
+  elif [[ "$DOKKU_DISTRO" == "raspbian" ]]; then
+    OS_IDS=("bullseye" "bookworm")
+    if ! in-array "$OS_ID" "${OS_IDS[@]}"; then
+      OS_ID="bookworm"
+    fi
+  fi
+
+  echo "--> Installing dokku"
+  wget -qO- https://packagecloud.io/dokku/dokku/gpgkey | sudo tee /etc/apt/trusted.gpg.d/dokku.asc
+  echo "deb https://packagecloud.io/dokku/dokku/$DOKKU_DISTRO/ $OS_ID main" | tee /etc/apt/sources.list.d/dokku.list
+  apt-get update -qq >/dev/null
+
+  [[ -n $DOKKU_VHOST_ENABLE ]] && echo "dokku dokku/vhost_enable boolean $DOKKU_VHOST_ENABLE" | sudo debconf-set-selections
+  [[ -n $DOKKU_HOSTNAME ]] && echo "dokku dokku/hostname string $DOKKU_HOSTNAME" | sudo debconf-set-selections
+  [[ -n $DOKKU_SKIP_KEY_FILE ]] && echo "dokku dokku/skip_key_file boolean $DOKKU_SKIP_KEY_FILE" | sudo debconf-set-selections
+  [[ -n $DOKKU_KEY_FILE ]] && echo "dokku dokku/key_file string $DOKKU_KEY_FILE" | sudo debconf-set-selections
+  [[ -n $DOKKU_NGINX_ENABLE ]] && echo "dokku dokku/nginx_enable string $DOKKU_NGINX_ENABLE" | sudo debconf-set-selections
+
+  if [[ -n $DOKKU_CHECKOUT ]]; then
+    apt-get -qq -y $NO_INSTALL_RECOMMENDS install "dokku=$DOKKU_CHECKOUT"
+  else
+    apt-get -qq -y $NO_INSTALL_RECOMMENDS install dokku
+  fi
+}
+
+main() {
+  export DOKKU_DISTRO DOKKU_DISTRO_VERSION
+  DOKKU_DISTRO=$(. /etc/os-release && echo "$ID")
+  DOKKU_DISTRO_VERSION=$(. /etc/os-release && echo "$VERSION_ID")
+
+  export DEBIAN_FRONTEND=noninteractive
+  export DOKKU_REPO=${DOKKU_REPO:-"https://github.com/dokku/dokku.git"}
+
+  ensure-environment
+  install-requirements
+  install-dokku
+
+  if [[ -f /etc/update-motd.d/99-dokku ]]; then
+    /etc/update-motd.d/99-dokku || true
+  fi
+}
+
+main "$@"

@@ -1,0 +1,23 @@
+{
+  "name": "edgedb-dokku-app",
+  "description": "EdgeDB app for Dokku deployment",
+  "keywords": [
+    "dokku",
+    "nodejs",
+    "edgedb"
+  ],
+  "website": "",
+  "repository": "",
+  "success_url": "/",
+  "env": {
+    "NODE_ENV": {
+      "description": "Node environment",
+      "value": "production"
+    }
+  },
+  "scripts": {
+    "dokku": {
+      "predeploy": ""
+    }
+  }
+} 

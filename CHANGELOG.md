@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## 2.0.2 (2024-04-04)
+
+### Added
+- Created "ignite" app as a renamed version of "edgedb-test-app"
+- Added support for connecting to EdgeDB/Gel using host.docker.internal
+- Improved connection handling with TLS security options
+- Created fallback connection method for more reliable database access
+- Added detailed status page showing connection and environment details
+- Enhanced error handling for network and connection issues
+
+### Changed
+- Renamed all references from "edgedb-test-app" to "ignite"
+- Renamed database instance from "edge-db-instance" to "edgedb-ignite"
+- Updated port mapping to use port 5001 (host) -> 5000 (container)
+- Modified deploy scripts for better error handling and feedback
+- Improved application logging with detailed connection information
+
 ## 2.0.1 (2024-04-04)
 
 ### Changes

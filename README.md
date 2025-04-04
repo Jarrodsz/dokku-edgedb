@@ -65,17 +65,17 @@ Since EdgeDB/Gel can only be connected to by an authenticated client with TLS ce
 EdgeDB/Gel comes with a powerful admin UI that's automatically enabled and available on port 10700. You can access it through the following steps:
 
 1. Get the UI URL:
-   ```shell
+```shell
    dokku gel:info mydb --ui-url
    ```
 
 2. Expose the UI port:
-   ```shell
+```shell
    dokku gel:expose mydb 10700
-   ```
-   
+```
+
    Optionally, you can map it to a different port:
-   ```shell
+```shell
    dokku gel:expose mydb 8080:10700
    ```
 
@@ -122,101 +122,31 @@ async function run() {
 run();
 ```
 
-## Development
+### Ignite Example Application
 
-This section covers how to set up a development environment to work on the dokku-gel plugin.
+This repository includes a complete example application called "Ignite" that demonstrates how to connect to EdgeDB/Gel from a Node.js application. The example showcases:
 
-### Setting Up the Development Environment
+- Connecting to EdgeDB/Gel using environment variables
+- Handling connection fallbacks and error cases
+- Implementing TLS security options
+- Using host.docker.internal to connect from containers
+- Building a simple status dashboard
 
-The plugin includes a Docker-based development environment that simulates a Dokku installation:
+To run the example application:
 
-1. **Prerequisites**:
-   - Docker Desktop (for macOS/Windows) or Docker Engine (for Linux)
-   - Git
+```shell
+# Clone the repository
+git clone https://github.com/yourusername/dokku-gel.git
+cd dokku-gel
 
-2. **Clone the repository**:
-   ```shell
-   git clone https://github.com/yourusername/dokku-gel.git
-   cd dokku-gel
-   ```
+# Deploy the Ignite app
+./deploy-ignite.sh
 
-3. **Set up the development container**:
-   ```shell
-   ./development/setup.sh
-   ```
-   
-   This script:
-   - Builds a container with Dokku dependencies
-   - Mounts the plugin code to `/var/lib/dokku/plugins/dokku-gel`
-   - Sets up SSH access on port 2222
-   - Exposes Gel ports (5656 for the database, 10700 for the UI)
+# Access the application
+open http://localhost:5001/
+```
 
-4. **Connect to the development container**:
-   ```shell
-   ssh -p 2222 root@localhost  # Password: dokku
-   ```
-
-### Running Tests
-
-The plugin uses the [Bats](https://github.com/bats-core/bats-core) testing framework for unit and integration tests:
-
-1. **Inside the development container**:
-   ```shell
-   cd /var/lib/dokku/plugins/dokku-gel
-   
-   # Run a specific test
-   bats tests/service_create.bats
-   
-   # Run all tests
-   bats tests/*.bats
-   ```
-
-2. **From your host machine**:
-   ```shell
-   # Run a specific test
-   docker exec -it dokku-gel-dev bash -c "cd /var/lib/dokku/plugins/dokku-gel && bats tests/service_create.bats"
-   
-   # Run all tests
-   docker exec -it dokku-gel-dev bash -c "cd /var/lib/dokku/plugins/dokku-gel && bats tests/*.bats"
-   ```
-
-### Development Workflow
-
-1. **Make code changes** in the plugin
-2. **Test your changes** using the Bats test framework
-3. **Restart the plugin** if needed:
-   ```shell
-   docker exec -it dokku-gel-dev bash -c "cd /var/lib/dokku/plugins/dokku-gel && dokku plugin:install"
-   ```
-4. **Try the plugin commands** manually:
-   ```shell
-   docker exec -it dokku-gel-dev bash -c "dokku gel:help"
-   ```
-
-### Debugging
-
-If you encounter issues:
-
-1. **Check container logs**:
-   ```shell
-   docker logs dokku-gel-dev
-   ```
-
-2. **Inspect the plugin installation**:
-   ```shell
-   docker exec -it dokku-gel-dev bash -c "ls -la /var/lib/dokku/plugins/enabled"
-   ```
-
-3. **Enable debug output** by setting `DOKKU_TRACE=1`:
-   ```shell
-   docker exec -it dokku-gel-dev bash -c "DOKKU_TRACE=1 dokku gel:command"
-   ```
-
-### Common Issues
-
-- **Dokku command not found**: The development container might not have Dokku properly installed or initialized
-- **Plugin not found**: Check that symbolic links are correctly set up in `/var/lib/dokku/plugins/enabled`
-- **Test failures**: Ensure environment variables are correctly set and that the development container has proper permissions
+The application will show connection status, query results, and environment details, making it easy to verify that your EdgeDB/Gel setup is working correctly.
 
 ## Troubleshooting
 
@@ -227,3 +157,80 @@ If you encounter issues:
 ## License
 
 This plugin is released under the same license as Dokku.
+
+## Development
+
+### Testing the Plugin
+
+The Dokku GEL plugin can be tested in two ways:
+
+1. **With a mock Dokku implementation**: For rapid development and testing without a full Dokku installation. This approach uses a simplified mock implementation of the Dokku command specifically for testing the plugin's functionality.
+
+2. **With a full Dokku installation**: For integration testing in a complete Dokku environment. This approach ensures that the plugin works correctly with all of Dokku's components.
+
+#### Current Testing Status
+
+The mock implementation currently supports the following commands:
+- `gel:create` - Create a new GEL service ✅
+- `gel:destroy` - Destroy a GEL service ✅
+- `gel:info` - Display service information ✅ 
+- `gel:restart` - Restart a service ✅
+- `gel:start` - Start a service ✅
+- `gel:stop` - Stop a service ✅
+- `gel:link` - Link a service to an app ✅
+- `gel:unlink` - Unlink a service from an app ✅
+
+Additional commands still need implementation in the mock.
+
+#### Testing with Mock Dokku
+
+1. Create a simplified version of the Dokku command:
+
+```bash
+cat > /usr/local/bin/dokku << 'EOF'
+#!/bin/bash
+# This is a simplified dokku implementation for testing the gel plugin
+
+# Log the command
+echo "Dokku command executed: $@"
+
+# Handle commands here
+if [[ "$1" == "gel:create" ]]; then
+  # Implementation for gel:create
+fi
+
+# Default response
+exit 0
+EOF
+chmod +x /usr/local/bin/dokku
+```
+
+2. Run tests using bats:
+
+```bash
+DOKKU_BIN=/usr/local/bin/dokku PLUGIN_DATA_ROOT=/var/lib/dokku/services/gel bats tests/*.bats
+```
+
+#### Testing with Full Dokku
+
+For complete integration testing, install Dokku according to the [official documentation](https://dokku.com/docs/getting-started/installation/).
+
+1. Install Dokku:
+
+```bash
+wget -NP . https://dokku.com/install/v0.35.16/bootstrap.sh
+sudo DOKKU_TAG=v0.35.16 bash bootstrap.sh
+```
+
+2. Install the plugin:
+
+```bash
+dokku plugin:install https://github.com/your-username/dokku-gel.git
+```
+
+3. Run tests:
+
+```bash
+cd /var/lib/dokku/plugins/gel
+bats tests/*.bats
+```

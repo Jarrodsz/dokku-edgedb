@@ -40,23 +40,23 @@ teardown() {
 
 @test "($PLUGIN_COMMAND_PREFIX:promote) changes DATABASE_URL" {
   password="$(sudo cat "$PLUGIN_DATA_ROOT/l/PASSWORD")"
-  dokku config:set my-app "DATABASE_URL=edgedb://u:p@host:5432/db" "DOKKU_EDGEDB_BLUE_URL=edgedb://edgedb:$password@dokku-edgedb-l:5432/l"
+  dokku config:set my-app "DATABASE_URL=gel://u:p@host:5656/db" "DOKKU_GEL_BLUE_URL=gel://gel:$password@dokku-gel-l:5656/l"
   dokku "$PLUGIN_COMMAND_PREFIX:promote" l my-app
   url=$(dokku config:get my-app DATABASE_URL)
-  assert_equal "$url" "edgedb://edgedb:$password@dokku-edgedb-l:5432/l"
+  assert_equal "$url" "gel://gel:$password@dokku-gel-l:5656/l"
 }
 
 @test "($PLUGIN_COMMAND_PREFIX:promote) creates new config url when needed" {
   password="$(sudo cat "$PLUGIN_DATA_ROOT/l/PASSWORD")"
-  dokku config:set my-app "DATABASE_URL=edgedb://u:p@host:5432/db" "DOKKU_EDGEDB_BLUE_URL=edgedb://edgedb:$password@dokku-edgedb-l:5432/l"
+  dokku config:set my-app "DATABASE_URL=gel://u:p@host:5656/db" "DOKKU_GEL_BLUE_URL=gel://gel:$password@dokku-gel-l:5656/l"
   dokku "$PLUGIN_COMMAND_PREFIX:promote" l my-app
   run dokku config my-app
-  assert_contains "${lines[*]}" "DOKKU_EDGEDB_"
+  assert_contains "${lines[*]}" "DOKKU_GEL_"
 }
-@test "($PLUGIN_COMMAND_PREFIX:promote) uses EDGEDB_DATABASE_SCHEME variable" {
+@test "($PLUGIN_COMMAND_PREFIX:promote) uses GEL_DATABASE_SCHEME variable" {
   password="$(sudo cat "$PLUGIN_DATA_ROOT/l/PASSWORD")"
-  dokku config:set my-app "EDGEDB_DATABASE_SCHEME=edgedb2" "DATABASE_URL=edgedb://u:p@host:5432/db" "DOKKU_EDGEDB_BLUE_URL=edgedb2://edgedb:$password@dokku-edgedb-l:5432/l"
+  dokku config:set my-app "GEL_DATABASE_SCHEME=edgedb2" "DATABASE_URL=gel://u:p@host:5656/db" "DOKKU_GEL_BLUE_URL=edgedb2://gel:$password@dokku-gel-l:5656/l"
   dokku "$PLUGIN_COMMAND_PREFIX:promote" l my-app
   url=$(dokku config:get my-app DATABASE_URL)
-  assert_contains "$url" "edgedb2://edgedb:$password@dokku-edgedb-l:5432/l"
+  assert_contains "$url" "edgedb2://gel:$password@dokku-gel-l:5656/l"
 }

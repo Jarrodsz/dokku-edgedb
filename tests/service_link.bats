@@ -62,21 +62,21 @@ teardown() {
   echo "status: $status"
   url=$(dokku config:get my-app DATABASE_URL)
   password="$(sudo cat "$PLUGIN_DATA_ROOT/l/PASSWORD")"
-  assert_contains "$url" "edgedb://edgedb:$password@dokku-edgedb-l:5432/l"
+  assert_contains "$url" "gel://gel:$password@dokku-gel-l:5656/l"
   assert_success
   dokku "$PLUGIN_COMMAND_PREFIX:unlink" l my-app
 }
 
 @test "($PLUGIN_COMMAND_PREFIX:link) generates an alternate config url when DATABASE_URL already in use" {
-  dokku config:set my-app DATABASE_URL=edgedb://user:pass@host:5432/db
+  dokku config:set my-app DATABASE_URL=gel://user:pass@host:5656/db
   dokku "$PLUGIN_COMMAND_PREFIX:link" l my-app
   run dokku config my-app
-  assert_contains "${lines[*]}" "DOKKU_EDGEDB_AQUA_URL"
+  assert_contains "${lines[*]}" "DOKKU_GEL_AQUA_URL"
   assert_success
 
   dokku "$PLUGIN_COMMAND_PREFIX:link" m my-app
   run dokku config my-app
-  assert_contains "${lines[*]}" "DOKKU_EDGEDB_BLACK_URL"
+  assert_contains "${lines[*]}" "DOKKU_GEL_BLACK_URL"
   assert_success
   dokku "$PLUGIN_COMMAND_PREFIX:unlink" m my-app
   dokku "$PLUGIN_COMMAND_PREFIX:unlink" l my-app
@@ -85,17 +85,17 @@ teardown() {
 @test "($PLUGIN_COMMAND_PREFIX:link) links to app with docker-options" {
   dokku "$PLUGIN_COMMAND_PREFIX:link" l my-app
   run dokku docker-options:report my-app
-  assert_contains "${lines[*]}" "--link dokku.edgedb.l:dokku-edgedb-l"
+  assert_contains "${lines[*]}" "--link dokku.edgedb.l:dokku-gel-l"
   assert_success
   dokku "$PLUGIN_COMMAND_PREFIX:unlink" l my-app
 }
 
-@test "($PLUGIN_COMMAND_PREFIX:link) uses apps EDGEDB_DATABASE_SCHEME variable" {
-  dokku config:set my-app EDGEDB_DATABASE_SCHEME=edgedb2
+@test "($PLUGIN_COMMAND_PREFIX:link) uses apps GEL_DATABASE_SCHEME variable" {
+  dokku config:set my-app GEL_DATABASE_SCHEME=edgedb2
   dokku "$PLUGIN_COMMAND_PREFIX:link" l my-app
   url=$(dokku config:get my-app DATABASE_URL)
   password="$(sudo cat "$PLUGIN_DATA_ROOT/l/PASSWORD")"
-  assert_contains "$url" "edgedb2://edgedb:$password@dokku-edgedb-l:5432/l"
+  assert_contains "$url" "edgedb2://gel:$password@dokku-gel-l:5656/l"
   assert_success
   dokku "$PLUGIN_COMMAND_PREFIX:unlink" l my-app
 }
@@ -112,7 +112,7 @@ teardown() {
   dokku "$PLUGIN_COMMAND_PREFIX:link" l my-app --alias "ALIAS"
   url=$(dokku config:get my-app ALIAS_URL)
   password="$(sudo cat "$PLUGIN_DATA_ROOT/l/PASSWORD")"
-  assert_contains "$url" "edgedb://edgedb:$password@dokku-edgedb-l:5432/l"
+  assert_contains "$url" "gel://gel:$password@dokku-gel-l:5656/l"
   assert_success
   dokku "$PLUGIN_COMMAND_PREFIX:unlink" l my-app
 }
