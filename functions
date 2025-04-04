@@ -97,8 +97,9 @@ service_create_container() {
     docker run --name "$SERVICE_NAME" \
       $MEMORY_LIMIT \
       $SHM_SIZE \
-      --volume "$SERVICE_HOST_ROOT/data:/var/lib/edgedb/data" \
-      --env "EDGEDB_SERVER_SECURITY=insecure_dev_mode" \
+      --volume "$SERVICE_HOST_ROOT/data:/var/lib/gel/data" \
+      --env "GEL_SERVER_SECURITY=insecure_dev_mode" \
+      --env "GEL_SERVER_UI=enabled" \
       --restart always \
       --label dokku=service \
       --label dokku.service="$PLUGIN_SERVICE" \
@@ -110,12 +111,12 @@ service_create_container() {
   dokku_log_verbose_quiet "Waiting for container to be ready"
   docker run --rm --link "$SERVICE_NAME:$PLUGIN_COMMAND_PREFIX" "$PLUGIN_WAIT_IMAGE" -p "$PLUGIN_DATASTORE_WAIT_PORT" -t "$PLUGIN_DATASTORE_WAIT_TIME" >/dev/null
 
-  dokku_log_verbose_quiet "Linking edgedb instance"
+  dokku_log_verbose_quiet "Linking gel instance"
   docker run --rm --link "$SERVICE_NAME:$PLUGIN_COMMAND_PREFIX" \
-    --env "EDGEDB_SERVER_PASSWORD=$PASSWORD" \
-    --volume "$SERVICE_ROOT/config:/.config/edgedb" \
+    --env "GEL_SERVER_PASSWORD=$PASSWORD" \
+    --volume "$SERVICE_ROOT/config:/.config/gel" \
     "$PLUGIN_CLI_IMAGE" \
-    -H "edgedb" instance link "$DATABASE_NAME" --port "5656" --user "edgedb" --database "edgedb" --trust-tls-cert --non-interactive --overwrite
+    -H "gel" instance link "$DATABASE_NAME" --port "5656" --user "gel" --database "gel" --trust-tls-cert --non-interactive --overwrite
 
   service_port_unpause "$SERVICE"
 
@@ -131,7 +132,7 @@ service_export() {
 
   [[ -n $SSH_TTY ]] && stty -opost
   docker run --rm --link "$SERVICE_NAME:$PLUGIN_COMMAND_PREFIX" \
-    --volume "$SERVICE_ROOT/config:/.config/edgedb" \
+    --volume "$SERVICE_ROOT/config:/.config/gel" \
     "$PLUGIN_CLI_IMAGE" \
     dump --instance "$DATABASE_NAME" -
 
@@ -150,7 +151,7 @@ service_import() {
   local PASSWORD="$(service_password "$SERVICE")"
 
   docker run --rm --link "$SERVICE_NAME:$PLUGIN_COMMAND_PREFIX" \
-    --volume "$SERVICE_ROOT/config:/.config/edgedb" \
+    --volume "$SERVICE_ROOT/config:/.config/gel" \
     --volume "$FILE:/tmp/dump.sql" \
     "$PLUGIN_CLI_IMAGE" \
     restore --instance "$DATABASE_NAME" /tmp/dump.sql
@@ -196,5 +197,10 @@ service_url() {
   local SERVICE="$1"
   local DATABASE_NAME="$(get_database_name "$SERVICE")"
   local PASSWORD="$(service_password "$SERVICE")"
-  echo "$PLUGIN_SCHEME://edgedb:$PASSWORD@$PLUGIN_COMMAND_PREFIX:${PLUGIN_DATASTORE_PORTS[0]}/$DATABASE_NAME"
+  echo "$PLUGIN_SCHEME://gel:$PASSWORD@$PLUGIN_COMMAND_PREFIX:${PLUGIN_DATASTORE_PORTS[0]}/$DATABASE_NAME"
+}
+
+service_ui_url() {
+  local SERVICE="$1"
+  echo "http://$PLUGIN_COMMAND_PREFIX:${PLUGIN_DATASTORE_PORTS[1]}"
 }
