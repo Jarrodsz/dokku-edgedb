@@ -25,4 +25,6 @@ All notable changes to the dokku-gel plugin will be documented in this file.
 - Updated service_link to use GEL_CREDENTIALS_FILE instead of EDGEDB_CREDENTIALS_FILE
 - Updated service_unlink to use GEL_CREDENTIALS_FILE
 - Updated all test files to use GEL references
-- Updated README.md with GEL branding and URL information 
+- Updated README.md with GEL branding and URL information
+- Updated the example application to use GEL instead of EdgeDB
+- Fixed volume paths in functions file to use GEL config 

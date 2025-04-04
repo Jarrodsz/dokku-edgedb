@@ -1,6 +1,6 @@
 # dokku gel
 
-Unofficial gel plugin for dokku. Currently defaults to installing [gel/gel:6.2](https://hub.docker.com/r/edgedb/edgedb/).
+Unofficial gel plugin for dokku. Currently defaults to installing [gel/gel:6.2](https://hub.docker.com/r/gel/gel/).
 
 ## Requirements
 
@@ -40,7 +40,7 @@ gel:backup-set-encryption <service> <passphrase> # set encryption for all future
 gel:backup-unschedule <service>                 # unschedule the backup of the Gel service
 gel:backup-unset-encryption <service>           # unset encryption for future backups of the Gel service
 gel:clone <service> <new-service> [--clone-flags...] # create container <new-name> then copy data from <name> into <new-name>
-gel:connect <service>                           # connect to the service via the edgedb connection tool
+gel:connect <service>                           # connect to the service via the gel connection tool
 gel:create <service> [--create-flags...]        # create a Gel service
 gel:destroy <service> [-f|--force]              # delete the Gel service/data/container if there are no links left
 gel:enter <service>                             # enter or run a command in a running Gel service container
@@ -55,7 +55,7 @@ gel:links <service>                             # list all apps linked to the Ge
 gel:list                                        # list all Gel services
 gel:logs <service> [-t|--tail] <tail-num-optional> # print the most recent log(s) for this service
 gel:pause <service>                             # pause a running Gel service
-gel:promote <service> <app>                     # promote service <service> as EDGEDB_URL in <app>
+gel:promote <service> <app>                     # promote service <service> as GEL_URL in <app>
 gel:restart <service>                           # graceful shutdown and restart of the Gel service container
 gel:start <service>                             # start a previously stopped Gel service
 gel:stop <service>                              # stop a running Gel service
@@ -94,10 +94,10 @@ Create a Gel service named lollipop:
 dokku gel:create lollipop
 ```
 
-You can also specify the image and image version to use for the service. It *must* be compatible with the edgedb/edgedb image.
+You can also specify the image and image version to use for the service. It *must* be compatible with the gel/gel image.
 
 ```shell
-export GEL_IMAGE="edgedb/edgedb"
+export GEL_IMAGE="gel/gel"
 export GEL_IMAGE_VERSION="${PLUGIN_IMAGE_VERSION}"
 dokku gel:create lollipop
 ```
@@ -231,12 +231,12 @@ dokku gel:link lollipop playground
 The following environment variables will be set automatically by docker (not on the app itself, so they won't be listed when calling dokku config):
 
 ```
-DOKKU_EDGEDB_LOLLIPOP_NAME=/lollipop/DATABASE
-DOKKU_EDGEDB_LOLLIPOP_PORT=tcp://172.17.0.1:5656
-DOKKU_EDGEDB_LOLLIPOP_PORT_5656_TCP=tcp://172.17.0.1:5656
-DOKKU_EDGEDB_LOLLIPOP_PORT_5656_TCP_PROTO=tcp
-DOKKU_EDGEDB_LOLLIPOP_PORT_5656_TCP_PORT=5656
-DOKKU_EDGEDB_LOLLIPOP_PORT_5656_TCP_ADDR=172.17.0.1
+DOKKU_GEL_LOLLIPOP_NAME=/lollipop/DATABASE
+DOKKU_GEL_LOLLIPOP_PORT=tcp://172.17.0.1:5656
+DOKKU_GEL_LOLLIPOP_PORT_5656_TCP=tcp://172.17.0.1:5656
+DOKKU_GEL_LOLLIPOP_PORT_5656_TCP_PROTO=tcp
+DOKKU_GEL_LOLLIPOP_PORT_5656_TCP_PORT=5656
+DOKKU_GEL_LOLLIPOP_PORT_5656_TCP_ADDR=172.17.0.1
 ```
 
 The host exposed here only works internally in docker containers. If you want your container to be reachable from outside, you should use the `expose` subcommand. Another service can be linked to your app:
@@ -245,10 +245,10 @@ The host exposed here only works internally in docker containers. If you want yo
 dokku gel:link other_service playground
 ```
 
-It is possible to change the protocol for `EDGEDB_URL` by setting the environment variable `EDGEDB_DATABASE_SCHEME` on the app. Doing so will after linking will cause the plugin to think the service is not linked, and we advise you to unlink before proceeding.
+It is possible to change the protocol for `GEL_URL` by setting the environment variable `GEL_DATABASE_SCHEME` on the app. Doing so will after linking will cause the plugin to think the service is not linked, and we advise you to unlink before proceeding.
 
 ```shell
-dokku config:set playground EDGEDB_DATABASE_SCHEME=edgedb2
+dokku config:set playground GEL_DATABASE_SCHEME=gel2
 dokku gel:link lollipop playground
 ```
 
@@ -271,14 +271,14 @@ dokku gel:unlink lollipop playground
 
 The lifecycle of each service can be managed through the following commands:
 
-### connect to the service via the edgedb connection tool
+### connect to the service via the gel connection tool
 
 ```shell
 # usage
 dokku gel:connect <service>
 ```
 
-Connect to the service via the edgedb connection tool:
+Connect to the service via the gel connection tool:
 
 > NOTE: disconnecting from ssh while running this command may leave zombie processes due to moby/moby#9098
 
@@ -339,7 +339,7 @@ Unexpose the service, removing access to it from the public interface (`0.0.0.0`
 dokku gel:unexpose lollipop
 ```
 
-### promote service <service> as EDGEDB_URL in <app>
+### promote service <service> as GEL_URL in <app>
 
 ```shell
 # usage
@@ -349,7 +349,7 @@ dokku gel:promote <service> <app>
 If you have a Gel service linked to an app and try to link another Gel service another link environment variable will be generated automatically:
 
 ```
-DOKKU_EDGEDB_BLUE_URL=gel://other_service:ANOTHER_PASSWORD@dokku-edgedb-other-service:5656/other_service
+DOKKU_GEL_BLUE_URL=gel://other_service:ANOTHER_PASSWORD@dokku-gel-other-service:5656/other_service
 ```
 
 You can promote the new service to be the primary one:
@@ -360,12 +360,12 @@ You can promote the new service to be the primary one:
 dokku gel:promote other_service playground
 ```
 
-This will replace `EDGEDB_URL` with the url from other_service and generate another environment variable to hold the previous value if necessary. You could end up with the following for example:
+This will replace `GEL_URL` with the url from other_service and generate another environment variable to hold the previous value if necessary. You could end up with the following for example:
 
 ```
-EDGEDB_URL=gel://other_service:ANOTHER_PASSWORD@dokku-edgedb-other-service:5656/other_service
-DOKKU_EDGEDB_BLUE_URL=gel://other_service:ANOTHER_PASSWORD@dokku-edgedb-other-service:5656/other_service
-DOKKU_EDGEDB_SILVER_URL=gel://lollipop:SOME_PASSWORD@dokku-edgedb-lollipop:5656/lollipop
+GEL_URL=gel://other_service:ANOTHER_PASSWORD@dokku-gel-other-service:5656/other_service
+DOKKU_GEL_BLUE_URL=gel://other_service:ANOTHER_PASSWORD@dokku-gel-other-service:5656/other_service
+DOKKU_GEL_SILVER_URL=gel://lollipop:SOME_PASSWORD@dokku-gel-lollipop:5656/lollipop
 ```
 
 ### start a previously stopped Gel service

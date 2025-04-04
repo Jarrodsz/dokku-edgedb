@@ -21,7 +21,7 @@ service_connect() {
 
   docker run \
     --link "$SERVICE_NAME:$PLUGIN_COMMAND_PREFIX" \
-    --volume "$SERVICE_ROOT/config:/.config/edgedb" \
+    --volume "$SERVICE_ROOT/config:/.config/gel" \
     -i $SERVICE_TTY_OPTS "$PLUGIN_CLI_IMAGE" \
     --instance "$DATABASE_NAME"
 }
@@ -98,6 +98,8 @@ service_create_container() {
       $MEMORY_LIMIT \
       $SHM_SIZE \
       --volume "$SERVICE_HOST_ROOT/data:/var/lib/gel/data" \
+      --volume "$SERVICE_HOST_ROOT/config:/.config/gel" \
+      --volume "$SERVICE_HOST_ROOT/run:/var/run/gel" \
       --env "GEL_SERVER_SECURITY=insecure_dev_mode" \
       --env "GEL_SERVER_UI=enabled" \
       --restart always \

@@ -1,16 +1,15 @@
-import edgedb
-import json
-from http import HTTPStatus
+import os
+import sys
+import gel
 
-from flask import Flask
+from fastapi import FastAPI
 
-app = Flask(__name__)
-
+app = FastAPI()
 
 @app.get("/")
-def health_check() -> tuple[dict, int]:
-    client = edgedb.create_client()
-    version = client.query_json("select sys::get_version()")
-    client.close()
-    return {"status": "Ok", "version": json.loads(version) }, HTTPStatus.OK
+def read_root():
+    """Execute a query on the GEL database."""
+    client = gel.create_client()
+    result = client.query("SELECT 1 + 1")
+    return {"result": result}
 
