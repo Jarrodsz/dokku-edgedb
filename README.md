@@ -1,6 +1,6 @@
-# dokku edgedb
+# dokku gel
 
-Unofficial edgedb plugin for dokku. Currently defaults to installing [edgedb/edgedb nightly](https://hub.docker.com/r/edgedb/edgedb/).
+Unofficial gel plugin for dokku. Currently defaults to installing [gel/gel:6.2](https://hub.docker.com/r/edgedb/edgedb/).
 
 ## Requirements
 
@@ -9,14 +9,14 @@ Unofficial edgedb plugin for dokku. Currently defaults to installing [edgedb/edg
 
 ## How it works
 
-Since edgedb can be connected only by an authenticated client (TLS certificates MUST be
-present), this plugin will create an edgedb credentials file and add the
-`EDGEDB_CREDENTIALS_FILE` configuration to the app. All edgedb clients can automatically
-use this to connect to the edgedb server.
+Since gel can be connected only by an authenticated client (TLS certificates MUST be
+present), this plugin will create a gel credentials file and add the
+`GEL_CREDENTIALS_FILE` configuration to the app. All gel clients can automatically
+use this to connect to the gel server.
 
 ## Important notes
 
-- The edgedb server usually requires more than 2GB of RAM to _**start**_ (not run). If you do not have
+- The gel server usually requires more than 2GB of RAM to _**start**_ (not run). If you do not have
   enough RAM, you will have to create a swap file. Please refer to tutorials online on how to
   do this.
 
@@ -24,57 +24,57 @@ use this to connect to the edgedb server.
 
 ```shell
 # on 0.19.x+
-sudo dokku plugin:install https://github.com/ignisda/dokku-edgedb.git edgedb
+sudo dokku plugin:install https://github.com/ignisda/dokku-gel.git gel
 ```
 
 ## Commands
 
 ```
-edgedb:app-links <app>                             # list all edgedb service links for a given app
-edgedb:backup <service> <bucket-name> [--use-iam]  # create a backup of the edgedb service to an existing s3 bucket
-edgedb:backup-auth <service> <aws-access-key-id> <aws-secret-access-key> <aws-default-region> <aws-signature-version> <endpoint-url> # set up authentication for backups on the edgedb service
-edgedb:backup-deauth <service>                     # remove backup authentication for the edgedb service
-edgedb:backup-schedule <service> <schedule> <bucket-name> [--use-iam] # schedule a backup of the edgedb service
-edgedb:backup-schedule-cat <service>               # cat the contents of the configured backup cronfile for the service
-edgedb:backup-set-encryption <service> <passphrase> # set encryption for all future backups of edgedb service
-edgedb:backup-unschedule <service>                 # unschedule the backup of the edgedb service
-edgedb:backup-unset-encryption <service>           # unset encryption for future backups of the edgedb service
-edgedb:clone <service> <new-service> [--clone-flags...] # create container <new-name> then copy data from <name> into <new-name>
-edgedb:connect <service>                           # connect to the service via the edgedb connection tool
-edgedb:create <service> [--create-flags...]        # create a edgedb service
-edgedb:destroy <service> [-f|--force]              # delete the edgedb service/data/container if there are no links left
-edgedb:enter <service>                             # enter or run a command in a running edgedb service container
-edgedb:exists <service>                            # check if the edgedb service exists
-edgedb:export <service>                            # export a dump of the edgedb service database
-edgedb:expose <service> <ports...>                 # expose a edgedb service on custom host:port if provided (random port on the 0.0.0.0 interface if otherwise unspecified)
-edgedb:import <service>                            # import a dump into the edgedb service database
-edgedb:info <service> [--single-info-flag]         # print the service information
-edgedb:link <service> <app> [--link-flags...]      # link the edgedb service to the app
-edgedb:linked <service> <app>                      # check if the edgedb service is linked to an app
-edgedb:links <service>                             # list all apps linked to the edgedb service
-edgedb:list                                        # list all edgedb services
-edgedb:logs <service> [-t|--tail] <tail-num-optional> # print the most recent log(s) for this service
-edgedb:pause <service>                             # pause a running edgedb service
-edgedb:promote <service> <app>                     # promote service <service> as EDGEDB_URL in <app>
-edgedb:restart <service>                           # graceful shutdown and restart of the edgedb service container
-edgedb:start <service>                             # start a previously stopped edgedb service
-edgedb:stop <service>                              # stop a running edgedb service
-edgedb:unexpose <service>                          # unexpose a previously exposed edgedb service
-edgedb:unlink <service> <app>                      # unlink the edgedb service from the app
-edgedb:upgrade <service> [--upgrade-flags...]      # upgrade service <service> to the specified versions
+gel:app-links <app>                             # list all Gel service links for a given app
+gel:backup <service> <bucket-name> [--use-iam]  # create a backup of the Gel service to an existing s3 bucket
+gel:backup-auth <service> <aws-access-key-id> <aws-secret-access-key> <aws-default-region> <aws-signature-version> <endpoint-url> # set up authentication for backups on the Gel service
+gel:backup-deauth <service>                     # remove backup authentication for the Gel service
+gel:backup-schedule <service> <schedule> <bucket-name> [--use-iam] # schedule a backup of the Gel service
+gel:backup-schedule-cat <service>               # cat the contents of the configured backup cronfile for the service
+gel:backup-set-encryption <service> <passphrase> # set encryption for all future backups of Gel service
+gel:backup-unschedule <service>                 # unschedule the backup of the Gel service
+gel:backup-unset-encryption <service>           # unset encryption for future backups of the Gel service
+gel:clone <service> <new-service> [--clone-flags...] # create container <new-name> then copy data from <name> into <new-name>
+gel:connect <service>                           # connect to the service via the edgedb connection tool
+gel:create <service> [--create-flags...]        # create a Gel service
+gel:destroy <service> [-f|--force]              # delete the Gel service/data/container if there are no links left
+gel:enter <service>                             # enter or run a command in a running Gel service container
+gel:exists <service>                            # check if the Gel service exists
+gel:export <service>                            # export a dump of the Gel service database
+gel:expose <service> <ports...>                 # expose a Gel service on custom host:port if provided (random port on the 0.0.0.0 interface if otherwise unspecified)
+gel:import <service>                            # import a dump into the Gel service database
+gel:info <service> [--single-info-flag]         # print the service information
+gel:link <service> <app> [--link-flags...]      # link the Gel service to the app
+gel:linked <service> <app>                      # check if the Gel service is linked to an app
+gel:links <service>                             # list all apps linked to the Gel service
+gel:list                                        # list all Gel services
+gel:logs <service> [-t|--tail] <tail-num-optional> # print the most recent log(s) for this service
+gel:pause <service>                             # pause a running Gel service
+gel:promote <service> <app>                     # promote service <service> as EDGEDB_URL in <app>
+gel:restart <service>                           # graceful shutdown and restart of the Gel service container
+gel:start <service>                             # start a previously stopped Gel service
+gel:stop <service>                              # stop a running Gel service
+gel:unexpose <service>                          # unexpose a previously exposed Gel service
+gel:unlink <service> <app>                      # unlink the Gel service from the app
+gel:upgrade <service> [--upgrade-flags...]      # upgrade service <service> to the specified versions
 ```
 
 ## Usage
 
-Help for any commands can be displayed by specifying the command as an argument to edgedb:help. Plugin help output in conjunction with any files in the `docs/` folder is used to generate the plugin documentation. Please consult the `edgedb:help` command for any undocumented commands.
+Help for any commands can be displayed by specifying the command as an argument to gel:help. Plugin help output in conjunction with any files in the `docs/` folder is used to generate the plugin documentation. Please consult the `gel:help` command for any undocumented commands.
 
 ### Basic Usage
 
-### create a edgedb service
+### create a Gel service
 
 ```shell
 # usage
-dokku edgedb:create <service> [--create-flags...]
+dokku gel:create <service> [--create-flags...]
 ```
 
 flags:
@@ -86,34 +86,34 @@ flags:
 - `-m|--memory MEMORY`: container memory limit in megabytes (default: unlimited)
 - `-p|--password PASSWORD`: override the user-level service password
 - `-r|--root-password PASSWORD`: override the root-level service password
-- `-s|--shm-size SHM_SIZE`: override shared memory size for edgedb docker container
+- `-s|--shm-size SHM_SIZE`: override shared memory size for gel docker container
 
-Create a edgedb service named lollipop:
+Create a Gel service named lollipop:
 
 ```shell
-dokku edgedb:create lollipop
+dokku gel:create lollipop
 ```
 
 You can also specify the image and image version to use for the service. It *must* be compatible with the edgedb/edgedb image.
 
 ```shell
-export EDGEDB_IMAGE="edgedb/edgedb"
-export EDGEDB_IMAGE_VERSION="${PLUGIN_IMAGE_VERSION}"
-dokku edgedb:create lollipop
+export GEL_IMAGE="edgedb/edgedb"
+export GEL_IMAGE_VERSION="${PLUGIN_IMAGE_VERSION}"
+dokku gel:create lollipop
 ```
 
-You can also specify custom environment variables to start the edgedb service in semi-colon separated form.
+You can also specify custom environment variables to start the Gel service in semi-colon separated form.
 
 ```shell
-export EDGEDB_CUSTOM_ENV="USER=alpha;HOST=beta"
-dokku edgedb:create lollipop
+export GEL_CUSTOM_ENV="USER=alpha;HOST=beta"
+dokku gel:create lollipop
 ```
 
 ### print the service information
 
 ```shell
 # usage
-dokku edgedb:info <service> [--single-info-flag]
+dokku gel:info <service> [--single-info-flag]
 ```
 
 flags:
@@ -128,46 +128,46 @@ flags:
 - `--service-root`: show the service root directory
 - `--status`: show the service running status
 - `--version`: show the service image version
-
+- `--ui-url`: show the service UI URL
 Get connection information as follows:
 
 ```shell
-dokku edgedb:info lollipop
+dokku gel:info lollipop
 ```
 
 You can also retrieve a specific piece of service info via flags:
 
 ```shell
-dokku edgedb:info lollipop --config-dir
-dokku edgedb:info lollipop --data-dir
-dokku edgedb:info lollipop --dsn
-dokku edgedb:info lollipop --exposed-ports
-dokku edgedb:info lollipop --id
-dokku edgedb:info lollipop --internal-ip
-dokku edgedb:info lollipop --links
-dokku edgedb:info lollipop --service-root
-dokku edgedb:info lollipop --status
-dokku edgedb:info lollipop --version
+dokku gel:info lollipop --config-dir
+dokku gel:info lollipop --data-dir
+dokku gel:info lollipop --dsn
+dokku gel:info lollipop --exposed-ports
+dokku gel:info lollipop --id
+dokku gel:info lollipop --internal-ip
+dokku gel:info lollipop --links
+dokku gel:info lollipop --service-root
+dokku gel:info lollipop --status
+dokku gel:info lollipop --version
 ```
 
-### list all edgedb services
+### list all Gel services
 
 ```shell
 # usage
-dokku edgedb:list 
+dokku gel:list 
 ```
 
 List all services:
 
 ```shell
-dokku edgedb:list
+dokku gel:list
 ```
 
 ### print the most recent log(s) for this service
 
 ```shell
 # usage
-dokku edgedb:logs <service> [-t|--tail] <tail-num-optional>
+dokku gel:logs <service> [-t|--tail] <tail-num-optional>
 ```
 
 flags:
@@ -177,26 +177,42 @@ flags:
 You can tail logs for a particular service:
 
 ```shell
-dokku edgedb:logs lollipop
+dokku gel:logs lollipop
 ```
 
 By default, logs will not be tailed, but you can do this with the --tail flag:
 
 ```shell
-dokku edgedb:logs lollipop --tail
+dokku gel:logs lollipop --tail
 ```
 
 The default tail setting is to show all logs, but an initial count can also be specified:
 
 ```shell
-dokku edgedb:logs lollipop --tail 5
+dokku gel:logs lollipop --tail 5
 ```
 
-### link the edgedb service to the app
+### access the GEL UI
+
+The GEL UI is automatically enabled and available on port 10700. You can access it via the `--ui-url` info flag:
+
+```shell
+dokku gel:info lollipop --ui-url
+```
+
+By exposing this port, you can access the GEL UI in your browser:
+
+```shell
+dokku gel:expose lollipop 5656 10700
+```
+
+The UI provides a visual interface for managing your GEL database, running queries, and exploring your schema.
+
+### link the Gel service to the app
 
 ```shell
 # usage
-dokku edgedb:link <service> <app> [--link-flags...]
+dokku gel:link <service> <app> [--link-flags...]
 ```
 
 flags:
@@ -204,15 +220,15 @@ flags:
 - `-a|--alias "BLUE_DATABASE"`: an alternative alias to use for linking to an app via environment variable
 - `-q|--querystring "pool=5"`: ampersand delimited querystring arguments to append to the service link
 
-A edgedb service can be linked to a container. This will use native docker links via the docker-options plugin. Here we link it to our `playground` app.
+A Gel service can be linked to a container. This will use native docker links via the docker-options plugin. Here we link it to our `playground` app.
 
 > NOTE: this will restart your app
 
 ```shell
-dokku edgedb:link lollipop playground
+dokku gel:link lollipop playground
 ```
 
-The following environment variables will be set automatically by docker (not on the app itself, so they won’t be listed when calling dokku config):
+The following environment variables will be set automatically by docker (not on the app itself, so they won't be listed when calling dokku config):
 
 ```
 DOKKU_EDGEDB_LOLLIPOP_NAME=/lollipop/DATABASE
@@ -226,29 +242,29 @@ DOKKU_EDGEDB_LOLLIPOP_PORT_5656_TCP_ADDR=172.17.0.1
 The host exposed here only works internally in docker containers. If you want your container to be reachable from outside, you should use the `expose` subcommand. Another service can be linked to your app:
 
 ```shell
-dokku edgedb:link other_service playground
+dokku gel:link other_service playground
 ```
 
 It is possible to change the protocol for `EDGEDB_URL` by setting the environment variable `EDGEDB_DATABASE_SCHEME` on the app. Doing so will after linking will cause the plugin to think the service is not linked, and we advise you to unlink before proceeding.
 
 ```shell
 dokku config:set playground EDGEDB_DATABASE_SCHEME=edgedb2
-dokku edgedb:link lollipop playground
+dokku gel:link lollipop playground
 ```
 
-### unlink the edgedb service from the app
+### unlink the Gel service from the app
 
 ```shell
 # usage
-dokku edgedb:unlink <service> <app>
+dokku gel:unlink <service> <app>
 ```
 
-You can unlink a edgedb service:
+You can unlink a Gel service:
 
 > NOTE: this will restart your app and unset related environment variables
 
 ```shell
-dokku edgedb:unlink lollipop playground
+dokku gel:unlink lollipop playground
 ```
 
 ### Service Lifecycle
@@ -259,7 +275,7 @@ The lifecycle of each service can be managed through the following commands:
 
 ```shell
 # usage
-dokku edgedb:connect <service>
+dokku gel:connect <service>
 ```
 
 Connect to the service via the edgedb connection tool:
@@ -267,14 +283,14 @@ Connect to the service via the edgedb connection tool:
 > NOTE: disconnecting from ssh while running this command may leave zombie processes due to moby/moby#9098
 
 ```shell
-dokku edgedb:connect lollipop
+dokku gel:connect lollipop
 ```
 
-### enter or run a command in a running edgedb service container
+### enter or run a command in a running Gel service container
 
 ```shell
 # usage
-dokku edgedb:enter <service>
+dokku gel:enter <service>
 ```
 
 A bash prompt can be opened against a running service. Filesystem changes will not be saved to disk.
@@ -282,58 +298,58 @@ A bash prompt can be opened against a running service. Filesystem changes will n
 > NOTE: disconnecting from ssh while running this command may leave zombie processes due to moby/moby#9098
 
 ```shell
-dokku edgedb:enter lollipop
+dokku gel:enter lollipop
 ```
 
 You may also run a command directly against the service. Filesystem changes will not be saved to disk.
 
 ```shell
-dokku edgedb:enter lollipop touch /tmp/test
+dokku gel:enter lollipop touch /tmp/test
 ```
 
-### expose a edgedb service on custom host:port if provided (random port on the 0.0.0.0 interface if otherwise unspecified)
+### expose a Gel service on custom host:port if provided (random port on the 0.0.0.0 interface if otherwise unspecified)
 
 ```shell
 # usage
-dokku edgedb:expose <service> <ports...>
+dokku gel:expose <service> <ports...>
 ```
 
 Expose the service on the service's normal ports, allowing access to it from the public interface (`0.0.0.0`):
 
 ```shell
-dokku edgedb:expose lollipop 5656
+dokku gel:expose lollipop 5656
 ```
 
 Expose the service on the service's normal ports, with the first on a specified ip adddress (127.0.0.1):
 
 ```shell
-dokku edgedb:expose lollipop 127.0.0.1:5656
+dokku gel:expose lollipop 127.0.0.1:5656
 ```
 
-### unexpose a previously exposed edgedb service
+### unexpose a previously exposed Gel service
 
 ```shell
 # usage
-dokku edgedb:unexpose <service>
+dokku gel:unexpose <service>
 ```
 
 Unexpose the service, removing access to it from the public interface (`0.0.0.0`):
 
 ```shell
-dokku edgedb:unexpose lollipop
+dokku gel:unexpose lollipop
 ```
 
 ### promote service <service> as EDGEDB_URL in <app>
 
 ```shell
 # usage
-dokku edgedb:promote <service> <app>
+dokku gel:promote <service> <app>
 ```
 
-If you have a edgedb service linked to an app and try to link another edgedb service another link environment variable will be generated automatically:
+If you have a Gel service linked to an app and try to link another Gel service another link environment variable will be generated automatically:
 
 ```
-DOKKU_EDGEDB_BLUE_URL=edgedb://other_service:ANOTHER_PASSWORD@dokku-edgedb-other-service:5656/other_service
+DOKKU_EDGEDB_BLUE_URL=gel://other_service:ANOTHER_PASSWORD@dokku-edgedb-other-service:5656/other_service
 ```
 
 You can promote the new service to be the primary one:
@@ -341,74 +357,74 @@ You can promote the new service to be the primary one:
 > NOTE: this will restart your app
 
 ```shell
-dokku edgedb:promote other_service playground
+dokku gel:promote other_service playground
 ```
 
 This will replace `EDGEDB_URL` with the url from other_service and generate another environment variable to hold the previous value if necessary. You could end up with the following for example:
 
 ```
-EDGEDB_URL=edgedb://other_service:ANOTHER_PASSWORD@dokku-edgedb-other-service:5656/other_service
-DOKKU_EDGEDB_BLUE_URL=edgedb://other_service:ANOTHER_PASSWORD@dokku-edgedb-other-service:5656/other_service
-DOKKU_EDGEDB_SILVER_URL=edgedb://lollipop:SOME_PASSWORD@dokku-edgedb-lollipop:5656/lollipop
+EDGEDB_URL=gel://other_service:ANOTHER_PASSWORD@dokku-edgedb-other-service:5656/other_service
+DOKKU_EDGEDB_BLUE_URL=gel://other_service:ANOTHER_PASSWORD@dokku-edgedb-other-service:5656/other_service
+DOKKU_EDGEDB_SILVER_URL=gel://lollipop:SOME_PASSWORD@dokku-edgedb-lollipop:5656/lollipop
 ```
 
-### start a previously stopped edgedb service
+### start a previously stopped Gel service
 
 ```shell
 # usage
-dokku edgedb:start <service>
+dokku gel:start <service>
 ```
 
 Start the service:
 
 ```shell
-dokku edgedb:start lollipop
+dokku gel:start lollipop
 ```
 
-### stop a running edgedb service
+### stop a running Gel service
 
 ```shell
 # usage
-dokku edgedb:stop <service>
+dokku gel:stop <service>
 ```
 
 Stop the service and removes the running container:
 
 ```shell
-dokku edgedb:stop lollipop
+dokku gel:stop lollipop
 ```
 
-### pause a running edgedb service
+### pause a running Gel service
 
 ```shell
 # usage
-dokku edgedb:pause <service>
+dokku gel:pause <service>
 ```
 
 Pause the running container for the service:
 
 ```shell
-dokku edgedb:pause lollipop
+dokku gel:pause lollipop
 ```
 
-### graceful shutdown and restart of the edgedb service container
+### graceful shutdown and restart of the Gel service container
 
 ```shell
 # usage
-dokku edgedb:restart <service>
+dokku gel:restart <service>
 ```
 
 Restart the service:
 
 ```shell
-dokku edgedb:restart lollipop
+dokku gel:restart lollipop
 ```
 
 ### upgrade service <service> to the specified versions
 
 ```shell
 # usage
-dokku edgedb:upgrade <service> [--upgrade-flags...]
+dokku gel:upgrade <service> [--upgrade-flags...]
 ```
 
 flags:
@@ -418,36 +434,36 @@ flags:
 - `-i|--image IMAGE`: the image name to start the service with
 - `-I|--image-version IMAGE_VERSION`: the image version to start the service with
 - `-R|--restart-apps "true"`: whether to force an app restart
-- `-s|--shm-size SHM_SIZE`: override shared memory size for edgedb docker container
+- `-s|--shm-size SHM_SIZE`: override shared memory size for gel docker container
 
 You can upgrade an existing service to a new image or image-version:
 
 ```shell
-dokku edgedb:upgrade lollipop
+dokku gel:upgrade lollipop
 ```
 
 ### Service Automation
 
 Service scripting can be executed using the following commands:
 
-### list all edgedb service links for a given app
+### list all Gel service links for a given app
 
 ```shell
 # usage
-dokku edgedb:app-links <app>
+dokku gel:app-links <app>
 ```
 
-List all edgedb services that are linked to the `playground` app.
+List all Gel services that are linked to the `playground` app.
 
 ```shell
-dokku edgedb:app-links playground
+dokku gel:app-links playground
 ```
 
 ### create container <new-name> then copy data from <name> into <new-name>
 
 ```shell
 # usage
-dokku edgedb:clone <service> <new-service> [--clone-flags...]
+dokku gel:clone <service> <new-service> [--clone-flags...]
 ```
 
 flags:
@@ -459,87 +475,87 @@ flags:
 - `-m|--memory MEMORY`: container memory limit in megabytes (default: unlimited)
 - `-p|--password PASSWORD`: override the user-level service password
 - `-r|--root-password PASSWORD`: override the root-level service password
-- `-s|--shm-size SHM_SIZE`: override shared memory size for edgedb docker container
+- `-s|--shm-size SHM_SIZE`: override shared memory size for gel docker container
 
 You can clone an existing service to a new one:
 
 ```shell
-dokku edgedb:clone lollipop lollipop-2
+dokku gel:clone lollipop lollipop-2
 ```
 
-### check if the edgedb service exists
+### check if the Gel service exists
 
 ```shell
 # usage
-dokku edgedb:exists <service>
+dokku gel:exists <service>
 ```
 
-Here we check if the lollipop edgedb service exists.
+Here we check if the lollipop Gel service exists.
 
 ```shell
-dokku edgedb:exists lollipop
+dokku gel:exists lollipop
 ```
 
-### check if the edgedb service is linked to an app
-
-```shell
-# usage
-dokku edgedb:linked <service> <app>
-```
-
-Here we check if the lollipop edgedb service is linked to the `playground` app.
-
-```shell
-dokku edgedb:linked lollipop playground
-```
-
-### list all apps linked to the edgedb service
+### check if the Gel service is linked to an app
 
 ```shell
 # usage
-dokku edgedb:links <service>
+dokku gel:linked <service> <app>
 ```
 
-List all apps linked to the `lollipop` edgedb service.
+Here we check if the lollipop Gel service is linked to the `playground` app.
 
 ```shell
-dokku edgedb:links lollipop
+dokku gel:linked lollipop playground
+```
+
+### list all apps linked to the Gel service
+
+```shell
+# usage
+dokku gel:links <service>
+```
+
+List all apps linked to the `lollipop` Gel service.
+
+```shell
+dokku gel:links lollipop
 ```
 
 ### Data Management
 
 The underlying service data can be imported and exported with the following commands:
 
-### import a dump into the edgedb service database
+### import a dump into the Gel service database
 
 ```shell
 # usage
-dokku edgedb:import <service>
+dokku gel:import <service>
 ```
 
 Import a datastore dump:
 
 ```shell
-dokku edgedb:import lollipop /tmp/data.dump
+dokku gel:import lollipop /tmp/data.dump
 ```
 
-### export a dump of the edgedb service database
+### export a dump of the Gel service database
 
 ```shell
 # usage
-dokku edgedb:export <service>
+dokku gel:export <service>
 ```
 
 By default, datastore output is exported to stdout:
 
 ```shell
-dokku edgedb:export lollipop
+dokku gel:export lollipop
 ```
 
 You can redirect this output to a file:
 
 ```shell
-dokku edgedb:export lollipop > data.dump
+dokku gel:export lollipop > data.dump
 ```
 
 ### Backups
@@ -550,55 +566,55 @@ You may skip the `backup-auth` step if your dokku install is running within EC2 
 
 Backups can be performed using the backup commands:
 
-### set up authentication for backups on the edgedb service
+### set up authentication for backups on the Gel service
 
 ```shell
 # usage
-dokku edgedb:backup-auth <service> <aws-access-key-id> <aws-secret-access-key> <aws-default-region> <aws-signature-version> <endpoint-url>
+dokku gel:backup-auth <service> <aws-access-key-id> <aws-secret-access-key> <aws-default-region> <aws-signature-version> <endpoint-url>
 ```
 
 Setup s3 backup authentication:
 
 ```shell
-dokku edgedb:backup-auth lollipop AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY
+dokku gel:backup-auth lollipop AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY
 ```
 
 Setup s3 backup authentication with different region:
 
 ```shell
-dokku edgedb:backup-auth lollipop AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_REGION
+dokku gel:backup-auth lollipop AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_REGION
 ```
 
 Setup s3 backup authentication with different signature version and endpoint:
 
 ```shell
-dokku edgedb:backup-auth lollipop AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_REGION AWS_SIGNATURE_VERSION ENDPOINT_URL
+dokku gel:backup-auth lollipop AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_REGION AWS_SIGNATURE_VERSION ENDPOINT_URL
 ```
 
 More specific example for minio auth:
 
 ```shell
-dokku edgedb:backup-auth lollipop MINIO_ACCESS_KEY_ID MINIO_SECRET_ACCESS_KEY us-east-1 s3v4 https://YOURMINIOSERVICE
+dokku gel:backup-auth lollipop MINIO_ACCESS_KEY_ID MINIO_SECRET_ACCESS_KEY us-east-1 s3v4 https://YOURMINIOSERVICE
 ```
 
-### remove backup authentication for the edgedb service
+### remove backup authentication for the Gel service
 
 ```shell
 # usage
-dokku edgedb:backup-deauth <service>
+dokku gel:backup-deauth <service>
 ```
 
 Remove s3 authentication:
 
 ```shell
-dokku edgedb:backup-deauth lollipop
+dokku gel:backup-deauth lollipop
 ```
 
-### create a backup of the edgedb service to an existing s3 bucket
+### create a backup of the Gel service to an existing s3 bucket
 
 ```shell
 # usage
-dokku edgedb:backup <service> <bucket-name> [--use-iam]
+dokku gel:backup <service> <bucket-name> [--use-iam]
 ```
 
 flags:
@@ -608,46 +624,46 @@ flags:
 Backup the `lollipop` service to the `my-s3-bucket` bucket on `AWS`:`
 
 ```shell
-dokku edgedb:backup lollipop my-s3-bucket --use-iam
+dokku gel:backup lollipop my-s3-bucket --use-iam
 ```
 
 Restore a backup file (assuming it was extracted via `tar -xf backup.tgz`):
 
 ```shell
-dokku edgedb:import lollipop < backup-folder/export
+dokku gel:import lollipop < backup-folder/export
 ```
 
-### set encryption for all future backups of edgedb service
+### set encryption for all future backups of Gel service
 
 ```shell
 # usage
-dokku edgedb:backup-set-encryption <service> <passphrase>
+dokku gel:backup-set-encryption <service> <passphrase>
 ```
 
 Set the GPG-compatible passphrase for encrypting backups for backups:
 
 ```shell
-dokku edgedb:backup-set-encryption lollipop
+dokku gel:backup-set-encryption lollipop
 ```
 
-### unset encryption for future backups of the edgedb service
+### unset encryption for future backups of the Gel service
 
 ```shell
 # usage
-dokku edgedb:backup-unset-encryption <service>
+dokku gel:backup-unset-encryption <service>
 ```
 
 Unset the `GPG` encryption passphrase for backups:
 
 ```shell
-dokku edgedb:backup-unset-encryption lollipop
+dokku gel:backup-unset-encryption lollipop
 ```
 
-### schedule a backup of the edgedb service
+### schedule a backup of the Gel service
 
 ```shell
 # usage
-dokku edgedb:backup-schedule <service> <schedule> <bucket-name> [--use-iam]
+dokku gel:backup-schedule <service> <schedule> <bucket-name> [--use-iam]
 ```
 
 flags:
@@ -659,43 +675,43 @@ Schedule a backup:
 > 'schedule' is a crontab expression, eg. "0 3 * * *" for each day at 3am
 
 ```shell
-dokku edgedb:backup-schedule lollipop "0 3 * * *" my-s3-bucket
+dokku gel:backup-schedule lollipop "0 3 * * *" my-s3-bucket
 ```
 
 Schedule a backup and authenticate via iam:
 
 ```shell
-dokku edgedb:backup-schedule lollipop "0 3 * * *" my-s3-bucket --use-iam
+dokku gel:backup-schedule lollipop "0 3 * * *" my-s3-bucket --use-iam
 ```
 
 ### cat the contents of the configured backup cronfile for the service
 
 ```shell
 # usage
-dokku edgedb:backup-schedule-cat <service>
+dokku gel:backup-schedule-cat <service>
 ```
 
 Cat the contents of the configured backup cronfile for the service:
 
 ```shell
-dokku edgedb:backup-schedule-cat lollipop
+dokku gel:backup-schedule-cat lollipop
 ```
 
-### unschedule the backup of the edgedb service
+### unschedule the backup of the Gel service
 
 ```shell
 # usage
-dokku edgedb:backup-unschedule <service>
+dokku gel:backup-unschedule <service>
 ```
 
 Remove the scheduled backup from cron:
 
 ```shell
-dokku edgedb:backup-unschedule lollipop
+dokku gel:backup-unschedule lollipop
 ```
 
 ### Disabling `docker pull` calls
 
-If you wish to disable the `docker pull` calls that the plugin triggers, you may set the `EDGEDB_DISABLE_PULL` environment variable to `true`. Once disabled, you will need to pull the service image you wish to deploy as shown in the `stderr` output.
+If you wish to disable the `docker pull` calls that the plugin triggers, you may set the `GEL_DISABLE_PULL` environment variable to `true`. Once disabled, you will need to pull the service image you wish to deploy as shown in the `stderr` output.
 
 Please ensure the proper images are in place when `docker pull` is disabled.

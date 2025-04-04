@@ -10,6 +10,7 @@ All notable changes to the dokku-gel plugin will be documented in this file.
 - Added service_ui_url function to get the UI URL
 - Added UI URL information to service_info output
 - Added test for UI URL in service_info.bats
+- Added GEL UI section to README.md
 
 ### Changed
 - Updated Dockerfile to use gel/gel:6.2 instead of edgedb/edgedb:nightly
@@ -23,4 +24,5 @@ All notable changes to the dokku-gel plugin will be documented in this file.
 - Modified service_url to use gel:// scheme instead of edgedb://
 - Updated service_link to use GEL_CREDENTIALS_FILE instead of EDGEDB_CREDENTIALS_FILE
 - Updated service_unlink to use GEL_CREDENTIALS_FILE
-- Updated all test files to use GEL references 
+- Updated all test files to use GEL references
+- Updated README.md with GEL branding and URL information 
