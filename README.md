@@ -160,60 +160,44 @@ This plugin is released under the same license as Dokku.
 
 ## Development
 
-### Testing the Plugin
+### Testing Approaches
 
-The Dokku GEL plugin can be tested in two ways:
+We use two methods to test this plugin:
 
-1. **With a mock Dokku implementation**: For rapid development and testing without a full Dokku installation. This approach uses a simplified mock implementation of the Dokku command specifically for testing the plugin's functionality.
+1. **Mock Testing**: Quick testing without a full Dokku setup
+2. **Integration Testing**: Complete testing with an actual Dokku installation
 
-2. **With a full Dokku installation**: For integration testing in a complete Dokku environment. This approach ensures that the plugin works correctly with all of Dokku's components.
+#### Supported Commands in Mock Testing
 
-#### Current Testing Status
+- ✅ `gel:create` - Create a new service
+- ✅ `gel:destroy` - Delete a service
+- ✅ `gel:info` - Show service details
+- ✅ `gel:restart` - Restart a service
+- ✅ `gel:start` - Start a service
+- ✅ `gel:stop` - Stop a service
+- ✅ `gel:link` - Connect service to app
+- ✅ `gel:unlink` - Disconnect service from app
 
-The mock implementation currently supports the following commands:
-- `gel:create` - Create a new GEL service ✅
-- `gel:destroy` - Destroy a GEL service ✅
-- `gel:info` - Display service information ✅ 
-- `gel:restart` - Restart a service ✅
-- `gel:start` - Start a service ✅
-- `gel:stop` - Stop a service ✅
-- `gel:link` - Link a service to an app ✅
-- `gel:unlink` - Unlink a service from an app ✅
+#### Quick Test with Mock Dokku
 
-Additional commands still need implementation in the mock.
-
-#### Testing with Mock Dokku
-
-1. Create a simplified version of the Dokku command:
+1. Create a simple Dokku mock:
 
 ```bash
 cat > /usr/local/bin/dokku << 'EOF'
 #!/bin/bash
-# This is a simplified dokku implementation for testing the gel plugin
-
-# Log the command
 echo "Dokku command executed: $@"
-
-# Handle commands here
-if [[ "$1" == "gel:create" ]]; then
-  # Implementation for gel:create
-fi
-
-# Default response
 exit 0
 EOF
 chmod +x /usr/local/bin/dokku
 ```
 
-2. Run tests using bats:
+2. Run tests:
 
 ```bash
 DOKKU_BIN=/usr/local/bin/dokku PLUGIN_DATA_ROOT=/var/lib/dokku/services/gel bats tests/*.bats
 ```
 
-#### Testing with Full Dokku
-
-For complete integration testing, install Dokku according to the [official documentation](https://dokku.com/docs/getting-started/installation/).
+#### Complete Test with Dokku
 
 1. Install Dokku:
 
@@ -222,7 +206,7 @@ wget -NP . https://dokku.com/install/v0.35.16/bootstrap.sh
 sudo DOKKU_TAG=v0.35.16 bash bootstrap.sh
 ```
 
-2. Install the plugin:
+2. Install plugin:
 
 ```bash
 dokku plugin:install https://github.com/your-username/dokku-gel.git
