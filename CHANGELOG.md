@@ -2,7 +2,7 @@
 
 All notable changes to the dokku-gel plugin will be documented in this file.
 
-## [2.0.0] - Unreleased
+## [2.0.0] - 2023-12-01
 
 ### Added
 - Initial changelog file
