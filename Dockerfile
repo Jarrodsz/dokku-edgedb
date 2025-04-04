@@ -1,1 +1,1 @@
-FROM edgedb/edgedb:nightly
+FROM gel/gel:6.2
