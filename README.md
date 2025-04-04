@@ -122,6 +122,102 @@ async function run() {
 run();
 ```
 
+## Development
+
+This section covers how to set up a development environment to work on the dokku-gel plugin.
+
+### Setting Up the Development Environment
+
+The plugin includes a Docker-based development environment that simulates a Dokku installation:
+
+1. **Prerequisites**:
+   - Docker Desktop (for macOS/Windows) or Docker Engine (for Linux)
+   - Git
+
+2. **Clone the repository**:
+   ```shell
+   git clone https://github.com/yourusername/dokku-gel.git
+   cd dokku-gel
+   ```
+
+3. **Set up the development container**:
+   ```shell
+   ./development/setup.sh
+   ```
+   
+   This script:
+   - Builds a container with Dokku dependencies
+   - Mounts the plugin code to `/var/lib/dokku/plugins/dokku-gel`
+   - Sets up SSH access on port 2222
+   - Exposes Gel ports (5656 for the database, 10700 for the UI)
+
+4. **Connect to the development container**:
+   ```shell
+   ssh -p 2222 root@localhost  # Password: dokku
+   ```
+
+### Running Tests
+
+The plugin uses the [Bats](https://github.com/bats-core/bats-core) testing framework for unit and integration tests:
+
+1. **Inside the development container**:
+   ```shell
+   cd /var/lib/dokku/plugins/dokku-gel
+   
+   # Run a specific test
+   bats tests/service_create.bats
+   
+   # Run all tests
+   bats tests/*.bats
+   ```
+
+2. **From your host machine**:
+   ```shell
+   # Run a specific test
+   docker exec -it dokku-gel-dev bash -c "cd /var/lib/dokku/plugins/dokku-gel && bats tests/service_create.bats"
+   
+   # Run all tests
+   docker exec -it dokku-gel-dev bash -c "cd /var/lib/dokku/plugins/dokku-gel && bats tests/*.bats"
+   ```
+
+### Development Workflow
+
+1. **Make code changes** in the plugin
+2. **Test your changes** using the Bats test framework
+3. **Restart the plugin** if needed:
+   ```shell
+   docker exec -it dokku-gel-dev bash -c "cd /var/lib/dokku/plugins/dokku-gel && dokku plugin:install"
+   ```
+4. **Try the plugin commands** manually:
+   ```shell
+   docker exec -it dokku-gel-dev bash -c "dokku gel:help"
+   ```
+
+### Debugging
+
+If you encounter issues:
+
+1. **Check container logs**:
+   ```shell
+   docker logs dokku-gel-dev
+   ```
+
+2. **Inspect the plugin installation**:
+   ```shell
+   docker exec -it dokku-gel-dev bash -c "ls -la /var/lib/dokku/plugins/enabled"
+   ```
+
+3. **Enable debug output** by setting `DOKKU_TRACE=1`:
+   ```shell
+   docker exec -it dokku-gel-dev bash -c "DOKKU_TRACE=1 dokku gel:command"
+   ```
+
+### Common Issues
+
+- **Dokku command not found**: The development container might not have Dokku properly installed or initialized
+- **Plugin not found**: Check that symbolic links are correctly set up in `/var/lib/dokku/plugins/enabled`
+- **Test failures**: Ensure environment variables are correctly set and that the development container has proper permissions
+
 ## Troubleshooting
 
 - **Service won't start**: Ensure you have enough memory (2GB+) available
