@@ -20,7 +20,6 @@ plugin-install() {
   pull-docker-image "${PLUGIN_IMAGE}:${PLUGIN_IMAGE_VERSION}"
   pull-docker-image "$PLUGIN_BUSYBOX_IMAGE"
   pull-docker-image "$PLUGIN_AMBASSADOR_IMAGE"
-  pull-docker-image "$PLUGIN_S3BACKUP_IMAGE"
   pull-docker-image "$PLUGIN_WAIT_IMAGE"
 
   mkdir -p "$PLUGIN_DATA_ROOT" || echo "Failed to create $PLUGIN_SERVICE data directory"
@@ -34,10 +33,6 @@ plugin-install() {
 
   touch "$_SUDOERS_FILE"
   cat >"$_SUDOERS_FILE" <<EOL
-%dokku ALL=(ALL) NOPASSWD:/bin/rm -f /etc/cron.d/dokku-${PLUGIN_COMMAND_PREFIX}-*
-%dokku ALL=(ALL) NOPASSWD:/bin/chown root\:root /etc/cron.d/dokku-${PLUGIN_COMMAND_PREFIX}-*
-%dokku ALL=(ALL) NOPASSWD:/bin/chmod 644 /etc/cron.d/dokku-${PLUGIN_COMMAND_PREFIX}-*
-%dokku ALL=(ALL) NOPASSWD:/bin/mv ${PLUGIN_DATA_ROOT}/.TMP_CRON_FILE /etc/cron.d/dokku-${PLUGIN_COMMAND_PREFIX}-*
 %dokku ALL=(ALL) NOPASSWD:/bin/chown 8983 $PLUGIN_DATA_ROOT/*
 %dokku ALL=(ALL) NOPASSWD:/bin/chgrp 8983 $PLUGIN_DATA_ROOT/*
 EOL
