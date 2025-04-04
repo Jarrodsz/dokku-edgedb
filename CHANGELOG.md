@@ -2,7 +2,7 @@
 
 All notable changes to the dokku-gel plugin will be documented in this file.
 
-## [Unreleased]
+## [2.0.0] - Unreleased
 
 ### Added
 - Initial changelog file
@@ -13,4 +13,5 @@ All notable changes to the dokku-gel plugin will be documented in this file.
 - Renamed plugin command prefix from "edgedb" to "gel"
 - Updated configuration to use GEL naming conventions
 - Changed image references from EdgeDB to GEL
-- Updated CLI image to gel/gel-cli:6.1.2 
+- Updated CLI image to gel/gel-cli:6.1.2
+- Bumped version to 2.0.0 to reflect major changes 

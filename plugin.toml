@@ -1,5 +1,5 @@
 [plugin]
-description = "dokku edgedb service plugin"
-version = "1.26.0"
+description = "dokku gel service plugin"
+version = "2.0.0"
 
 [plugin.config]
