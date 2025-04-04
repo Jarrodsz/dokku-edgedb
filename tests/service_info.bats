@@ -22,21 +22,21 @@ teardown() {
 @test "($PLUGIN_COMMAND_PREFIX:info) success" {
   run dokku "$PLUGIN_COMMAND_PREFIX:info" l
   local password="$(sudo cat "$PLUGIN_DATA_ROOT/l/PASSWORD")"
-  assert_contains "${lines[*]}" "edgedb://edgedb:$password@dokku-edgedb-l:5432/l"
+  assert_contains "${lines[*]}" "gel://gel:$password@dokku-gel-l:5656/l"
 }
 
 @test "($PLUGIN_COMMAND_PREFIX:info) replaces underscores by dash in hostname" {
   dokku "$PLUGIN_COMMAND_PREFIX:create" test_with_underscores
   run dokku "$PLUGIN_COMMAND_PREFIX:info" test_with_underscores
   local password="$(sudo cat "$PLUGIN_DATA_ROOT/test_with_underscores/PASSWORD")"
-  assert_contains "${lines[*]}" "edgedb://edgedb:$password@dokku-edgedb-test-with-underscores:5432/test_with_underscores"
+  assert_contains "${lines[*]}" "gel://gel:$password@dokku-gel-test-with-underscores:5656/test_with_underscores"
   dokku --force "$PLUGIN_COMMAND_PREFIX:destroy" test_with_underscores
 }
 
 @test "($PLUGIN_COMMAND_PREFIX:info) success with flag" {
   run dokku "$PLUGIN_COMMAND_PREFIX:info" l --dsn
   local password="$(sudo cat "$PLUGIN_DATA_ROOT/l/PASSWORD")"
-  assert_output "edgedb://edgedb:$password@dokku-edgedb-l:5432/l"
+  assert_output "gel://gel:$password@dokku-gel-l:5656/l"
 
   run dokku "$PLUGIN_COMMAND_PREFIX:info" l --config-dir
   assert_success
@@ -66,6 +66,9 @@ teardown() {
   assert_success
 
   run dokku "$PLUGIN_COMMAND_PREFIX:info" l --version
+  assert_success
+
+  run dokku "$PLUGIN_COMMAND_PREFIX:info" l --ui-url
   assert_success
 }
 
