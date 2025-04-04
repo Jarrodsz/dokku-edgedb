@@ -1,8 +1,23 @@
 # Changelog
 
-All notable changes to the dokku-gel plugin will be documented in this file.
+All notable changes to this project will be documented in this file.
 
-## [2.0.0] - 2023-12-01
+## 2.0.1 (2024-04-04)
+
+### Changes
+
+- Simplified plugin by removing S3 backup functionality
+- Removed complex backup features (backup-auth, backup-schedule, backup-encryption, etc.)
+- Updated README with focus on essential functionality
+- Improved clarity and organization of documentation
+- Maintained all core functionality for Gel/EdgeDB database usage
+
+## 2.0.0 (2023-08-02)
+
+### Changes
+
+- Rename plugin from EdgeDB to Gel
+- Update image to gel/gel:6.2
 
 ### Added
 - Initial changelog file
