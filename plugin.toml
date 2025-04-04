@@ -1,5 +1,5 @@
 [plugin]
-description = "dokku gel service plugin"
-version = "2.0.0"
+description = "dokku gel service plugin with focus on essential features"
+version = "2.0.1"
 
 [plugin.config]
